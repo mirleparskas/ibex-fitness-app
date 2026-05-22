@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glute + Engine Training App</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <div>
+        <p class="kicker">8 Weeks / Strength & Conditioning / Editable Template</p>
+        <h1>Glute + Engine Split</h1>
+        <p class="sub">
+          Two 4-week training blocks built around progressive strength, scored metcons,
+          tiered loading, and targeted accessory work. Inspired by public IBEX Training
+          structure, not affiliated with IBEX Training.
+        </p>
+      </div>
+      <div class="stats" aria-label="Program summary">
+        <span><b>6</b> days/wk</span>
+        <span><b>60</b> min cap</span>
+        <span><b>3</b> tiers</span>
+      </div>
+    </header>
+
+    <section class="controls" aria-label="Workout controls">
+      <label class="search">
+        <span>Search</span>
+        <input id="searchInput" type="search" placeholder="snatch, glute, AMRAP, L2...">
+      </label>
+      <button id="expandBtn" type="button">Expand all</button>
+      <button id="resetBtn" type="button">Reset progress</button>
+    </section>
+
+    <nav class="weeks" aria-label="Select week">
+      <div id="weekTabs" class="weeks-scroll"></div>
+    </nav>
+
+    <section id="blockBanner" class="block-banner" aria-live="polite"></section>
+
+    <section class="program-notes" aria-label="Program notes">
+      <div>
+        <h2>How The Plan Progresses</h2>
+        <p>
+          Weeks 1-3 build volume and load. Week 4 tests the first block. Weeks 5-7
+          intensify with heavier pulls and sharper metcons. Week 8 retests.
+        </p>
+      </div>
+      <div>
+        <h2>Editable By Design</h2>
+        <p>
+          The program content is in <code>workouts.js</code>. Change text there and
+          refresh the browser. The layout and saved progress keep working.
+        </p>
+      </div>
+    </section>
+
+    <section id="dayList" class="day-list"></section>
+
+    <footer>
+      <p>
+        Use current 1RMs for percentages. Pick the conditioning tier that preserves
+        the intended stimulus. Checked workouts, selected tiers, and notes save in
+        this browser with localStorage.
+      </p>
+      <p class="fineprint">
+        This is a workout display tool, not medical advice. Scale loads and volume to
+        current ability, recovery, and technique.
+      </p>
+    </footer>
+  </main>
+
+  <script src="workouts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
