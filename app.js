@@ -1,7 +1,8 @@
 const state = {
   week: Number(localStorage.getItem("fit.week") || 0),
   expanded: false,
-  search: ""
+  search: "",
+  openDays: new Set()
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -168,8 +169,9 @@ function renderDays() {
   list.innerHTML = "";
   buildWeek(state.week).forEach((day, dayIndex) => {
     const key = `w${state.week}.d${dayIndex}`;
+    const isOpen = state.expanded || state.openDays.has(key);
     const card = document.createElement("article");
-    card.className = `day${state.expanded ? " open" : ""}`;
+    card.className = `day${isOpen ? " open" : ""}`;
     card.dataset.search = JSON.stringify(day).toLowerCase();
     card.innerHTML = `
       <div class="day-head" role="button" tabindex="0">
@@ -193,12 +195,12 @@ function renderDays() {
 
     $(".day-head", card).addEventListener("click", (event) => {
       if (event.target.matches("input")) return;
-      card.classList.toggle("open");
+      toggleDay(card, key);
     });
     $(".day-head", card).addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        card.classList.toggle("open");
+        toggleDay(card, key);
       }
     });
     list.appendChild(card);
@@ -248,6 +250,7 @@ function renderDays() {
       current.week = state.week;
       current.updatedAt = new Date().toISOString();
       writeJson(`fit.track.${button.dataset.track}`, current);
+      preserveOpenDay(button);
       renderDays();
       applySearch();
     });
@@ -260,6 +263,7 @@ function renderDays() {
       if (!current.sets.length) current.sets.push(blankSet());
       current.updatedAt = new Date().toISOString();
       writeJson(`fit.track.${button.dataset.track}`, current);
+      preserveOpenDay(button);
       renderDays();
       applySearch();
     });
@@ -297,6 +301,23 @@ function renderDays() {
   });
 
   updateLastTimePanels();
+}
+
+function toggleDay(card, key) {
+  const isOpen = card.classList.toggle("open");
+  if (isOpen) {
+    state.openDays.add(key);
+  } else {
+    state.openDays.delete(key);
+  }
+}
+
+function preserveOpenDay(element) {
+  const day = element.closest(".day");
+  const done = day ? $("[data-done]", day) : null;
+  if (day && day.classList.contains("open") && done) {
+    state.openDays.add(done.dataset.done);
+  }
 }
 
 function renderSegment(segment, key, dayIndex, segIndex) {
@@ -574,6 +595,7 @@ function escapeAttr(value) {
 
 $("#expandBtn").addEventListener("click", () => {
   state.expanded = !state.expanded;
+  if (!state.expanded) state.openDays.clear();
   $("#expandBtn").textContent = state.expanded ? "Collapse all" : "Expand all";
   $$(".day").forEach((day) => day.classList.toggle("open", state.expanded));
 });
@@ -585,6 +607,7 @@ $("#resetBtn").addEventListener("click", () => {
   state.week = 0;
   state.expanded = false;
   state.search = "";
+  state.openDays.clear();
   $("#searchInput").value = "";
   $("#expandBtn").textContent = "Expand all";
   render();
