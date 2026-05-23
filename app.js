@@ -186,7 +186,7 @@ function renderDays() {
         <div class="chev">v</div>
       </div>
       <div class="day-body">
-        ${day.segments.map((segment, segIndex) => renderSegment(segment, `${key}.s${segIndex}`)).join("")}
+        ${day.segments.map((segment, segIndex) => renderSegment(segment, `${key}.s${segIndex}`, dayIndex, segIndex)).join("")}
         <textarea class="notes" data-note="${key}" placeholder="Session notes...">${escapeHtml(localStorage.getItem(`fit.note.${key}`) || "")}</textarea>
       </div>
     `;
@@ -223,9 +223,55 @@ function renderDays() {
       applySearch();
     });
   });
+
+  $$(".track-input").forEach((input) => {
+    input.addEventListener("input", () => {
+      const current = readJson(`fit.track.${input.dataset.track}`, {});
+      current[input.dataset.field] = input.value;
+      current.movementId = input.dataset.movementId;
+      current.movement = input.dataset.movement;
+      current.week = state.week;
+      current.updatedAt = new Date().toISOString();
+      writeJson(`fit.track.${input.dataset.track}`, current);
+      updateLastTimePanels();
+    });
+  });
+
+  $$(".swap-select").forEach((select) => {
+    select.addEventListener("change", () => {
+      const value = select.value;
+      const blockSwap = select.closest(".movement-tools").querySelector(".block-swap");
+      const scopeKey = blockSwap.checked ? blockSwap.dataset.blockKey : select.dataset.instanceKey;
+      if (value) {
+        localStorage.setItem(scopeKey, value);
+      } else {
+        localStorage.removeItem(scopeKey);
+      }
+      renderDays();
+      applySearch();
+    });
+  });
+
+  $$(".block-swap").forEach((box) => {
+    box.addEventListener("change", () => {
+      const select = box.closest(".movement-tools").querySelector(".swap-select");
+      if (!select.value) return;
+      if (box.checked) {
+        localStorage.removeItem(select.dataset.instanceKey);
+        localStorage.setItem(box.dataset.blockKey, select.value);
+      } else {
+        localStorage.removeItem(box.dataset.blockKey);
+        localStorage.setItem(select.dataset.instanceKey, select.value);
+      }
+      renderDays();
+      applySearch();
+    });
+  });
+
+  updateLastTimePanels();
 }
 
-function renderSegment(segment, key) {
+function renderSegment(segment, key, dayIndex, segIndex) {
   let body = "";
 
   if (segment.kind === "text") {
@@ -233,16 +279,17 @@ function renderSegment(segment, key) {
   }
 
   if (segment.kind === "lift") {
+    const movement = renderTrackedMovement(segment.movement, key, dayIndex, segIndex, 0, segment.prescription);
     body = `
       <div class="rx-line">${escapeHtml(segment.prescription)}</div>
-      <p class="plain">${escapeHtml(segment.movement)}</p>
-      ${segment.superset ? `<div class="superset">${segment.superset.map((item) => `<p class="plain">${escapeHtml(item)}</p>`).join("")}</div>` : ""}
+      ${movement}
+      ${segment.superset ? `<div class="superset">${segment.superset.map((item, itemIndex) => renderSupersetItem(item, key, dayIndex, segIndex, itemIndex)).join("")}</div>` : ""}
       <div class="goal"><b>Goal</b><span>${escapeHtml(segment.goal)}</span></div>
     `;
   }
 
   if (segment.kind === "list") {
-    body = `<ul class="movement-list">${segment.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+    body = `<div class="tracked-list">${segment.items.map((item, itemIndex) => renderTrackedMovement(item, key, dayIndex, segIndex, itemIndex, item)).join("")}</div>`;
   }
 
   if (segment.kind === "metcon") {
@@ -251,7 +298,7 @@ function renderSegment(segment, key) {
     body = `
       <div class="metcon">
         <div class="metcon-title">${escapeHtml(mc.format)}</div>
-        <ul class="movement-list">${mc.moves.map((move) => `<li>${escapeHtml(move)}</li>`).join("")}</ul>
+        <div class="tracked-list">${mc.moves.map((move, moveIndex) => renderTrackedMovement(move, key, dayIndex, segIndex, moveIndex, move)).join("")}</div>
         <div class="tiers">
           ${["L1", "L2", "L3"].map((tier) => `<button class="tier ${tier === selected ? "active" : ""}" type="button" data-key="${key}" data-tier="${tier}">${tier} ${tier === "L1" ? "Scaled" : tier === "L2" ? "Rx" : "Rx+"}</button>`).join("")}
         </div>
@@ -271,6 +318,167 @@ function renderSegment(segment, key) {
       ${body}
     </section>
   `;
+}
+
+function renderSupersetItem(item, segmentKey, dayIndex, segIndex, itemIndex) {
+  if (/^superset/i.test(item)) {
+    return `<p class="plain">${escapeHtml(item)}</p>`;
+  }
+  return renderTrackedMovement(item, segmentKey, dayIndex, segIndex, itemIndex + 20, item);
+}
+
+function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, movementIndex, prescription) {
+  const base = cleanMovementName(rawMovement);
+  const category = categoryForMovement(base);
+  const movementId = `${category}.${slug(base)}`;
+  const instanceKey = `fit.swap.instance.w${state.week}.d${dayIndex}.s${segIndex}.m${movementIndex}`;
+  const blockKey = `fit.swap.block.b${getWeekBlock(state.week)}.${movementId}`;
+  const blockSwap = localStorage.getItem(blockKey);
+  const instanceSwap = localStorage.getItem(instanceKey);
+  const activeMovement = blockSwap || instanceSwap || base;
+  const trackKey = `w${state.week}.d${dayIndex}.s${segIndex}.m${movementIndex}`;
+  const saved = readJson(`fit.track.${trackKey}`, {});
+  const options = optionsForCategory(category, base);
+  const optionList = options.includes(activeMovement) ? options : [activeMovement, ...options];
+  const descriptor = cleanDescriptor(rawMovement, base);
+
+  return `
+    <div class="movement-card" data-movement-id="${escapeAttr(movementId)}">
+      <div class="movement-main">
+        <div>
+          <p class="plain movement-name">${escapeHtml(activeMovement)}</p>
+          ${descriptor ? `<p class="movement-prescription">${escapeHtml(descriptor)}</p>` : ""}
+        </div>
+        <span class="category-pill">${escapeHtml(labelForCategory(category))}</span>
+      </div>
+      <div class="movement-tools">
+        <label>
+          <span>Swap</span>
+          <select class="swap-select" data-instance-key="${escapeAttr(instanceKey)}">
+            <option value="">Original: ${escapeHtml(base)}</option>
+            ${optionList.map((option) => `<option value="${escapeAttr(option)}" ${option === activeMovement && option !== base ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+          </select>
+        </label>
+        <label class="persist-choice">
+          <input class="block-swap" type="checkbox" data-block-key="${escapeAttr(blockKey)}" ${blockSwap ? "checked" : ""}>
+          Keep for block
+        </label>
+      </div>
+      <div class="tracker">
+        <label>
+          <span>Weight lb</span>
+          <input class="track-input" inputmode="decimal" placeholder="0" value="${escapeAttr(saved.weight || "")}" data-track="${escapeAttr(trackKey)}" data-field="weight" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(activeMovement)}">
+        </label>
+        <label>
+          <span>Reps</span>
+          <input class="track-input" inputmode="numeric" placeholder="0" value="${escapeAttr(saved.reps || "")}" data-track="${escapeAttr(trackKey)}" data-field="reps" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(activeMovement)}">
+        </label>
+        <label class="tracker-notes">
+          <span>Notes</span>
+          <input class="track-input" placeholder="sets, RPE, side..." value="${escapeAttr(saved.notes || "")}" data-track="${escapeAttr(trackKey)}" data-field="notes" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(activeMovement)}">
+        </label>
+      </div>
+      <p class="last-time" data-last-time="${escapeAttr(trackKey)}" data-movement-id="${escapeAttr(movementId)}"></p>
+    </div>
+  `;
+}
+
+function cleanMovementName(value) {
+  return String(value)
+    .replace(/^\d+\s*(?:sets?)?\s*[:x]\s*/i, "")
+    .replace(/^\d+\s*[-/]\s*\d+\s*/, "")
+    .replace(/^\d+\s*(rounds?:|min\s+\d+:)\s*/i, "")
+    .replace(/^\d+\/\d+\s*/, "")
+    .replace(/^\d+\s*(cal|m)\b\s*/i, "")
+    .replace(/^\d+\s*(sec|seconds?)\b\s*/i, "")
+    .replace(/^\d+s\s+/i, "")
+    .replace(/^\d+\s*/, "")
+    .replace(/\s*@.*$/i, "")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function cleanDescriptor(rawMovement, base) {
+  const raw = String(rawMovement).trim();
+  return raw === base ? "" : raw;
+}
+
+function categoryForMovement(movement) {
+  const text = movement.toLowerCase();
+  if (/snatch|clean|jerk|overhead squat/.test(text)) return "olympic";
+  if (/hip thrust|glute|bridge|kickback|abduction|frog|reverse hyper/.test(text)) return "glute";
+  if (/squat|lunge|step-up|wall ball|leg press/.test(text)) return "squat";
+  if (/deadlift|rdl|hinge|pull-through|swing|hamstring|good morning|extension/.test(text)) return "hinge";
+  if (/bike|row|run|ski|burpee|box|double|single|cal|devil/.test(text)) return "conditioning";
+  if (/press|push-up|bench|dip|hspu|thruster/.test(text)) return "press";
+  if (/pull|row|curl|toes-to-bar|knee raise|muscle-up/.test(text)) return "pull";
+  if (/plank|sit-up|v-up|hollow|russian|core|copenhagen|bird-dog/.test(text)) return "core";
+  return "conditioning";
+}
+
+function optionsForCategory(category, original) {
+  const database = typeof EXERCISE_OPTIONS === "undefined" ? {} : EXERCISE_OPTIONS;
+  const options = database[category] || [];
+  return [original, ...options].filter((item, index, list) => item && list.indexOf(item) === index);
+}
+
+function labelForCategory(category) {
+  return {
+    squat: "Squat",
+    hinge: "Hinge",
+    glute: "Glute",
+    olympic: "Olympic",
+    press: "Press",
+    pull: "Pull",
+    conditioning: "Metcon",
+    core: "Core"
+  }[category] || "Move";
+}
+
+function slug(value) {
+  return String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function readJson(key, fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(key)) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJson(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function findLastEntry(movementId, trackKey) {
+  const currentWeek = Number(trackKey.match(/^w(\d+)/)?.[1] || state.week);
+  return Object.keys(localStorage)
+    .filter((key) => key.startsWith("fit.track."))
+    .map((key) => ({ key, value: readJson(key, null) }))
+    .filter((entry) => entry.value && entry.value.movementId === movementId)
+    .filter((entry) => entry.key !== `fit.track.${trackKey}`)
+    .map((entry) => ({
+      ...entry,
+      week: Number(entry.key.match(/fit\.track\.w(\d+)/)?.[1] || -1)
+    }))
+    .filter((entry) => entry.week < currentWeek)
+    .sort((a, b) => b.week - a.week || String(b.value.updatedAt || "").localeCompare(String(a.value.updatedAt || "")))[0];
+}
+
+function updateLastTimePanels() {
+  $$("[data-last-time]").forEach((panel) => {
+    const last = findLastEntry(panel.dataset.movementId, panel.dataset.lastTime);
+    if (!last || (!last.value.weight && !last.value.reps && !last.value.notes)) {
+      panel.textContent = "Last time: no previous entry";
+      return;
+    }
+    const parts = [];
+    if (last.value.weight) parts.push(`${last.value.weight} lb`);
+    if (last.value.reps) parts.push(`${last.value.reps} reps`);
+    if (last.value.notes) parts.push(last.value.notes);
+    panel.textContent = `Last time, week ${last.week + 1}: ${parts.join(" / ")}`;
+  });
 }
 
 function labelForType(type) {
@@ -293,6 +501,10 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value);
 }
 
 $("#expandBtn").addEventListener("click", () => {

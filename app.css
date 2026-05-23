@@ -29,7 +29,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -116,6 +117,7 @@ h1 {
 
 input,
 textarea,
+select,
 button {
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -123,9 +125,14 @@ button {
   color: var(--txt);
 }
 
-input {
+input,
+select {
   width: 100%;
   padding: 10px 12px;
+}
+
+select {
+  min-height: 42px;
 }
 
 button {
@@ -437,6 +444,104 @@ button:hover {
   padding: 3px 0;
 }
 
+.tracked-list {
+  display: grid;
+  gap: 10px;
+}
+
+.movement-card {
+  padding: 11px;
+  border: 1px solid rgba(255, 255, 255, .07);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .025);
+}
+
+.movement-main {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.movement-name {
+  margin: 0;
+  color: var(--txt);
+  font-weight: 800;
+}
+
+.movement-prescription {
+  margin: 3px 0 0;
+  color: var(--muted2);
+  font-size: 12px;
+}
+
+.category-pill {
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.movement-tools {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 10px;
+}
+
+.movement-tools span,
+.tracker span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted2);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.persist-choice {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.persist-choice input {
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+.tracker {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, .7fr) minmax(0, 1.5fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.last-time {
+  min-height: 18px;
+  margin: 8px 0 0;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .superset {
   margin-top: 8px;
   padding-left: 11px;
@@ -559,5 +664,15 @@ code {
 
   .done {
     grid-column: 2 / 3;
+  }
+
+  .movement-main,
+  .movement-tools,
+  .tracker {
+    grid-template-columns: 1fr;
+  }
+
+  .persist-choice {
+    justify-content: flex-start;
   }
 }
