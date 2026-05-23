@@ -224,16 +224,44 @@ function renderDays() {
     });
   });
 
-  $$(".track-input").forEach((input) => {
+  $$(".set-input").forEach((input) => {
     input.addEventListener("input", () => {
-      const current = readJson(`fit.track.${input.dataset.track}`, {});
-      current[input.dataset.field] = input.value;
+      const current = normalizeTrackEntry(readJson(`fit.track.${input.dataset.track}`, {}));
+      const setIndex = Number(input.dataset.setIndex);
+      current.sets[setIndex] = current.sets[setIndex] || blankSet();
+      current.sets[setIndex][input.dataset.field] = input.value;
       current.movementId = input.dataset.movementId;
       current.movement = input.dataset.movement;
       current.week = state.week;
       current.updatedAt = new Date().toISOString();
       writeJson(`fit.track.${input.dataset.track}`, current);
       updateLastTimePanels();
+    });
+  });
+
+  $$(".add-set").forEach((button) => {
+    button.addEventListener("click", () => {
+      const current = normalizeTrackEntry(readJson(`fit.track.${button.dataset.track}`, {}));
+      current.sets.push(blankSet());
+      current.movementId = button.dataset.movementId;
+      current.movement = button.dataset.movement;
+      current.week = state.week;
+      current.updatedAt = new Date().toISOString();
+      writeJson(`fit.track.${button.dataset.track}`, current);
+      renderDays();
+      applySearch();
+    });
+  });
+
+  $$(".delete-set").forEach((button) => {
+    button.addEventListener("click", () => {
+      const current = normalizeTrackEntry(readJson(`fit.track.${button.dataset.track}`, {}));
+      current.sets.splice(Number(button.dataset.setIndex), 1);
+      if (!current.sets.length) current.sets.push(blankSet());
+      current.updatedAt = new Date().toISOString();
+      writeJson(`fit.track.${button.dataset.track}`, current);
+      renderDays();
+      applySearch();
     });
   });
 
@@ -337,7 +365,7 @@ function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, move
   const instanceSwap = localStorage.getItem(instanceKey);
   const activeMovement = blockSwap || instanceSwap || base;
   const trackKey = `w${state.week}.d${dayIndex}.s${segIndex}.m${movementIndex}`;
-  const saved = readJson(`fit.track.${trackKey}`, {});
+  const saved = normalizeTrackEntry(readJson(`fit.track.${trackKey}`, {}));
   const options = optionsForCategory(category, base);
   const optionList = options.includes(activeMovement) ? options : [activeMovement, ...options];
   const descriptor = cleanDescriptor(rawMovement, base);
@@ -364,21 +392,30 @@ function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, move
           Keep for block
         </label>
       </div>
-      <div class="tracker">
-        <label>
+      <div class="set-tracker">
+        <div class="set-head">
+          <span>Set</span>
           <span>Weight lb</span>
-          <input class="track-input" inputmode="decimal" placeholder="0" value="${escapeAttr(saved.weight || "")}" data-track="${escapeAttr(trackKey)}" data-field="weight" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(activeMovement)}">
-        </label>
-        <label>
           <span>Reps</span>
-          <input class="track-input" inputmode="numeric" placeholder="0" value="${escapeAttr(saved.reps || "")}" data-track="${escapeAttr(trackKey)}" data-field="reps" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(activeMovement)}">
-        </label>
-        <label class="tracker-notes">
           <span>Notes</span>
-          <input class="track-input" placeholder="sets, RPE, side..." value="${escapeAttr(saved.notes || "")}" data-track="${escapeAttr(trackKey)}" data-field="notes" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(activeMovement)}">
-        </label>
+          <span></span>
+        </div>
+        ${saved.sets.map((set, setIndex) => renderSetRow(set, trackKey, movementId, activeMovement, setIndex, saved.sets.length)).join("")}
+        <button class="add-set" type="button" data-track="${escapeAttr(trackKey)}" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(activeMovement)}">Add set</button>
       </div>
       <p class="last-time" data-last-time="${escapeAttr(trackKey)}" data-movement-id="${escapeAttr(movementId)}"></p>
+    </div>
+  `;
+}
+
+function renderSetRow(set, trackKey, movementId, movement, setIndex, setCount) {
+  return `
+    <div class="set-row">
+      <div class="set-number">${setIndex + 1}</div>
+      <input class="set-input" inputmode="decimal" placeholder="0" value="${escapeAttr(set.weight || "")}" data-track="${escapeAttr(trackKey)}" data-set-index="${setIndex}" data-field="weight" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(movement)}" aria-label="Set ${setIndex + 1} weight in pounds">
+      <input class="set-input" inputmode="numeric" placeholder="0" value="${escapeAttr(set.reps || "")}" data-track="${escapeAttr(trackKey)}" data-set-index="${setIndex}" data-field="reps" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(movement)}" aria-label="Set ${setIndex + 1} reps">
+      <input class="set-input" placeholder="RPE, side..." value="${escapeAttr(set.notes || "")}" data-track="${escapeAttr(trackKey)}" data-set-index="${setIndex}" data-field="notes" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(movement)}" aria-label="Set ${setIndex + 1} notes">
+      <button class="delete-set" type="button" data-track="${escapeAttr(trackKey)}" data-set-index="${setIndex}" ${setCount === 1 ? "disabled" : ""} aria-label="Delete set ${setIndex + 1}">x</button>
     </div>
   `;
 }
@@ -451,6 +488,27 @@ function writeJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function blankSet() {
+  return { weight: "", reps: "", notes: "" };
+}
+
+function normalizeTrackEntry(entry) {
+  const normalized = entry && typeof entry === "object" ? { ...entry } : {};
+  if (Array.isArray(normalized.sets)) {
+    normalized.sets = normalized.sets.length ? normalized.sets.map((set) => ({ ...blankSet(), ...set })) : [blankSet()];
+    return normalized;
+  }
+  if (normalized.weight || normalized.reps || normalized.notes) {
+    normalized.sets = [{ weight: normalized.weight || "", reps: normalized.reps || "", notes: normalized.notes || "" }];
+    delete normalized.weight;
+    delete normalized.reps;
+    delete normalized.notes;
+    return normalized;
+  }
+  normalized.sets = [blankSet()];
+  return normalized;
+}
+
 function findLastEntry(movementId, trackKey) {
   const currentWeek = Number(trackKey.match(/^w(\d+)/)?.[1] || state.week);
   return Object.keys(localStorage)
@@ -469,15 +527,22 @@ function findLastEntry(movementId, trackKey) {
 function updateLastTimePanels() {
   $$("[data-last-time]").forEach((panel) => {
     const last = findLastEntry(panel.dataset.movementId, panel.dataset.lastTime);
-    if (!last || (!last.value.weight && !last.value.reps && !last.value.notes)) {
+    const entry = last ? normalizeTrackEntry(last.value) : null;
+    const completedSets = entry ? entry.sets.filter((set) => set.weight || set.reps || set.notes) : [];
+    if (!last || !completedSets.length) {
       panel.textContent = "Last time: no previous entry";
       return;
     }
-    const parts = [];
-    if (last.value.weight) parts.push(`${last.value.weight} lb`);
-    if (last.value.reps) parts.push(`${last.value.reps} reps`);
-    if (last.value.notes) parts.push(last.value.notes);
-    panel.textContent = `Last time, week ${last.week + 1}: ${parts.join(" / ")}`;
+    const summary = completedSets
+      .map((set, index) => {
+        const parts = [];
+        if (set.weight) parts.push(`${set.weight} lb`);
+        if (set.reps) parts.push(`${set.reps} reps`);
+        if (set.notes) parts.push(set.notes);
+        return `S${index + 1} ${parts.join(" / ")}`;
+      })
+      .join("; ");
+    panel.textContent = `Last time, week ${last.week + 1}: ${summary}`;
   });
 }
 
