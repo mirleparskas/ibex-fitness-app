@@ -165,6 +165,7 @@ function renderBanner() {
 }
 
 function renderDays() {
+  captureOpenDays();
   const list = $("#dayList");
   list.innerHTML = "";
   buildWeek(state.week).forEach((day, dayIndex) => {
@@ -172,6 +173,7 @@ function renderDays() {
     const isOpen = state.expanded || state.openDays.has(key);
     const card = document.createElement("article");
     card.className = `day${isOpen ? " open" : ""}`;
+    card.dataset.dayKey = key;
     card.dataset.search = JSON.stringify(day).toLowerCase();
     card.innerHTML = `
       <div class="day-head" role="button" tabindex="0">
@@ -221,6 +223,7 @@ function renderDays() {
   $$(".tier").forEach((button) => {
     button.addEventListener("click", () => {
       localStorage.setItem(`fit.tier.${button.dataset.key}`, button.dataset.tier);
+      captureOpenDays();
       renderDays();
       applySearch();
     });
@@ -250,7 +253,7 @@ function renderDays() {
       current.week = state.week;
       current.updatedAt = new Date().toISOString();
       writeJson(`fit.track.${button.dataset.track}`, current);
-      preserveOpenDay(button);
+      captureOpenDays();
       renderDays();
       applySearch();
     });
@@ -263,7 +266,7 @@ function renderDays() {
       if (!current.sets.length) current.sets.push(blankSet());
       current.updatedAt = new Date().toISOString();
       writeJson(`fit.track.${button.dataset.track}`, current);
-      preserveOpenDay(button);
+      captureOpenDays();
       renderDays();
       applySearch();
     });
@@ -279,6 +282,7 @@ function renderDays() {
       } else {
         localStorage.removeItem(scopeKey);
       }
+      captureOpenDays();
       renderDays();
       applySearch();
     });
@@ -295,6 +299,7 @@ function renderDays() {
         localStorage.removeItem(box.dataset.blockKey);
         localStorage.setItem(select.dataset.instanceKey, select.value);
       }
+      captureOpenDays();
       renderDays();
       applySearch();
     });
@@ -312,12 +317,10 @@ function toggleDay(card, key) {
   }
 }
 
-function preserveOpenDay(element) {
-  const day = element.closest(".day");
-  const done = day ? $("[data-done]", day) : null;
-  if (day && day.classList.contains("open") && done) {
-    state.openDays.add(done.dataset.done);
-  }
+function captureOpenDays() {
+  $$(".day.open").forEach((day) => {
+    if (day.dataset.dayKey) state.openDays.add(day.dataset.dayKey);
+  });
 }
 
 function renderSegment(segment, key, dayIndex, segIndex) {
