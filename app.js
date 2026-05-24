@@ -191,6 +191,7 @@ function renderDays() {
       </div>
       <div class="day-body">
         ${day.segments.map((segment, segIndex) => renderSegment(segment, `${key}.s${segIndex}`, dayIndex, segIndex)).join("")}
+        ${renderExtraExercises(key, dayIndex)}
         <textarea class="notes" data-note="${key}" placeholder="Session notes...">${escapeHtml(localStorage.getItem(`fit.note.${key}`) || "")}</textarea>
       </div>
     `;
@@ -241,6 +242,65 @@ function renderDays() {
       current.updatedAt = new Date().toISOString();
       writeJson(`fit.track.${input.dataset.track}`, current);
       updateLastTimePanels();
+    });
+  });
+
+  $$(".metcon-input").forEach((input) => {
+    input.addEventListener("input", () => {
+      const current = normalizeMetconEntry(readJson(`fit.metcon.${input.dataset.key}`, {}));
+      if (input.dataset.field === "rounds" || input.dataset.field === "reps" || input.dataset.field === "time" || input.dataset.field === "notes") {
+        current[input.dataset.field] = input.value;
+      }
+      if (input.dataset.field === "load") {
+        current.loads[input.dataset.movementId] = {
+          movement: input.dataset.movement,
+          load: input.value
+        };
+      }
+      current.updatedAt = new Date().toISOString();
+      writeJson(`fit.metcon.${input.dataset.key}`, current);
+    });
+  });
+
+  $$(".extra-name").forEach((input) => {
+    input.addEventListener("input", () => {
+      const extras = readExtras(input.dataset.dayKey);
+      const item = extras[Number(input.dataset.extraIndex)];
+      if (!item) return;
+      item.name = input.value;
+      writeExtras(input.dataset.dayKey, extras);
+    });
+    input.addEventListener("change", () => {
+      captureOpenDays();
+      renderDays();
+      applySearch();
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      input.blur();
+    });
+  });
+
+  $$(".add-extra").forEach((button) => {
+    button.addEventListener("click", () => {
+      const extras = readExtras(button.dataset.dayKey);
+      extras.push({ name: "" });
+      writeExtras(button.dataset.dayKey, extras);
+      captureOpenDays();
+      renderDays();
+      applySearch();
+    });
+  });
+
+  $$(".remove-extra").forEach((button) => {
+    button.addEventListener("click", () => {
+      const extras = readExtras(button.dataset.dayKey);
+      extras.splice(Number(button.dataset.extraIndex), 1);
+      writeExtras(button.dataset.dayKey, extras);
+      captureOpenDays();
+      renderDays();
+      applySearch();
     });
   });
 
@@ -341,7 +401,7 @@ function renderSegment(segment, key, dayIndex, segIndex) {
   }
 
   if (segment.kind === "list") {
-    body = `<div class="tracked-list">${segment.items.map((item, itemIndex) => renderTrackedMovement(item, key, dayIndex, segIndex, itemIndex, item)).join("")}</div>`;
+    body = `<div class="tracked-list">${segment.items.map((item, itemIndex) => renderListItem(item, key, dayIndex, segIndex, itemIndex)).join("")}</div>`;
   }
 
   if (segment.kind === "metcon") {
@@ -350,12 +410,13 @@ function renderSegment(segment, key, dayIndex, segIndex) {
     body = `
       <div class="metcon">
         <div class="metcon-title">${escapeHtml(mc.format)}</div>
-        <div class="tracked-list">${mc.moves.map((move, moveIndex) => renderTrackedMovement(move, key, dayIndex, segIndex, moveIndex, move)).join("")}</div>
+        <div class="metcon-block">${mc.moves.map((move, moveIndex) => renderMetconMove(move, key, dayIndex, segIndex, moveIndex)).join("")}</div>
         <div class="tiers">
           ${["L1", "L2", "L3"].map((tier) => `<button class="tier ${tier === selected ? "active" : ""}" type="button" data-key="${key}" data-tier="${tier}">${tier} ${tier === "L1" ? "Scaled" : tier === "L2" ? "Rx" : "Rx+"}</button>`).join("")}
         </div>
         <p class="loads"><b>${selected}:</b> ${escapeHtml(mc.tiers[selected])}</p>
         <span class="cap">${escapeHtml(mc.cap)}</span>
+        ${renderMetconTracking(mc, key, dayIndex, segIndex)}
         <div class="goal"><b>Goal</b><span>${escapeHtml(mc.goal)}</span></div>
       </div>
     `;
@@ -379,6 +440,91 @@ function renderSupersetItem(item, segmentKey, dayIndex, segIndex, itemIndex) {
   return renderTrackedMovement(item, segmentKey, dayIndex, segIndex, itemIndex + 20, item);
 }
 
+function renderListItem(item, segmentKey, dayIndex, segIndex, itemIndex) {
+  if (isInstructionLine(item)) {
+    return `<p class="plain instruction-line">${escapeHtml(item)}</p>`;
+  }
+  return renderTrackedMovement(item, segmentKey, dayIndex, segIndex, itemIndex, item);
+}
+
+function isInstructionLine(item) {
+  return /^(?:\d+\s+rounds?|rest|nasal|keep it|quality|move well|easy|smooth)/i.test(String(item).trim());
+}
+
+function renderMetconMove(rawMovement, segmentKey, dayIndex, segIndex, movementIndex) {
+  const base = cleanMovementName(rawMovement);
+  const category = categoryForMovement(base);
+  const movementId = `${category}.${slug(base)}`;
+  const instanceKey = `fit.swap.instance.w${state.week}.d${dayIndex}.s${segIndex}.m${movementIndex}`;
+  const blockKey = `fit.swap.block.b${getWeekBlock(state.week)}.${movementId}`;
+  const blockSwap = localStorage.getItem(blockKey);
+  const instanceSwap = localStorage.getItem(instanceKey);
+  const activeMovement = blockSwap || instanceSwap || base;
+  const options = optionsForCategory(category, base);
+  const optionList = options.includes(activeMovement) ? options : [activeMovement, ...options];
+  const descriptor = cleanDescriptor(rawMovement, base);
+
+  return `
+    <div class="metcon-move">
+      <div>
+        <p class="plain movement-name">${escapeHtml(activeMovement)}</p>
+        ${descriptor ? `<p class="movement-prescription">${escapeHtml(descriptor)}</p>` : ""}
+      </div>
+      <div class="movement-tools compact-tools">
+        <label>
+          <span>Swap</span>
+          <select class="swap-select" data-instance-key="${escapeAttr(instanceKey)}">
+            <option value="">Original: ${escapeHtml(base)}</option>
+            ${optionList.map((option) => `<option value="${escapeAttr(option)}" ${option === activeMovement && option !== base ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+          </select>
+        </label>
+        <label class="persist-choice">
+          <input class="block-swap" type="checkbox" data-block-key="${escapeAttr(blockKey)}" ${blockSwap ? "checked" : ""}>
+          Keep for block
+        </label>
+      </div>
+    </div>
+  `;
+}
+
+function renderMetconTracking(mc, key, dayIndex, segIndex) {
+  const saved = normalizeMetconEntry(readJson(`fit.metcon.${key}`, {}));
+  const isAmrap = /amrap/i.test(mc.format);
+  const loadRows = mc.moves.map((move, moveIndex) => {
+    const base = cleanMovementName(move);
+    const category = categoryForMovement(base);
+    const movementId = `${category}.${slug(base)}`;
+    const instanceKey = `fit.swap.instance.w${state.week}.d${dayIndex}.s${segIndex}.m${moveIndex}`;
+    const blockKey = `fit.swap.block.b${getWeekBlock(state.week)}.${movementId}`;
+    const activeMovement = localStorage.getItem(blockKey) || localStorage.getItem(instanceKey) || base;
+    const savedLoad = saved.loads[movementId]?.load || "";
+    return `
+      <label>
+        <span>${escapeHtml(activeMovement)}</span>
+        <input class="metcon-input" placeholder="Load / setup used" value="${escapeAttr(savedLoad)}" data-key="${escapeAttr(key)}" data-field="load" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(activeMovement)}">
+      </label>
+    `;
+  }).join("");
+
+  return `
+    <div class="metcon-score">
+      <div class="score-grid ${isAmrap ? "" : "time-score"}">
+        ${isAmrap ? `
+          <label><span>Rounds</span><input class="metcon-input" inputmode="numeric" placeholder="0" value="${escapeAttr(saved.rounds)}" data-key="${escapeAttr(key)}" data-field="rounds"></label>
+          <label><span>Reps</span><input class="metcon-input" inputmode="numeric" placeholder="0" value="${escapeAttr(saved.reps)}" data-key="${escapeAttr(key)}" data-field="reps"></label>
+        ` : `
+          <label><span>Score / Time</span><input class="metcon-input" placeholder="12:34, cals, reps..." value="${escapeAttr(saved.time)}" data-key="${escapeAttr(key)}" data-field="time"></label>
+        `}
+        <label><span>Score notes</span><input class="metcon-input" placeholder="Tie-break, scale, split..." value="${escapeAttr(saved.notes)}" data-key="${escapeAttr(key)}" data-field="notes"></label>
+      </div>
+      <div class="metcon-loads">
+        <div class="score-label">Weights / setups used</div>
+        ${loadRows}
+      </div>
+    </div>
+  `;
+}
+
 function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, movementIndex, prescription) {
   const base = cleanMovementName(rawMovement);
   const category = categoryForMovement(base);
@@ -393,6 +539,8 @@ function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, move
   const options = optionsForCategory(category, base);
   const optionList = options.includes(activeMovement) ? options : [activeMovement, ...options];
   const descriptor = cleanDescriptor(rawMovement, base);
+  const mode = trackingModeForMovement(category, rawMovement, prescription);
+  const headings = mode === "time" ? ["Set", "Time / result", "Load", "Notes"] : ["Set", "Weight lb", "Reps", "Notes"];
 
   return `
     <div class="movement-card" data-movement-id="${escapeAttr(movementId)}">
@@ -418,13 +566,10 @@ function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, move
       </div>
       <div class="set-tracker">
         <div class="set-head">
-          <span>Set</span>
-          <span>Weight lb</span>
-          <span>Reps</span>
-          <span>Notes</span>
+          ${headings.map((heading) => `<span>${escapeHtml(heading)}</span>`).join("")}
           <span></span>
         </div>
-        ${saved.sets.map((set, setIndex) => renderSetRow(set, trackKey, movementId, activeMovement, setIndex, saved.sets.length)).join("")}
+        ${saved.sets.map((set, setIndex) => renderSetRow(set, trackKey, movementId, activeMovement, setIndex, saved.sets.length, mode)).join("")}
         <button class="add-set" type="button" data-track="${escapeAttr(trackKey)}" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(activeMovement)}">Add set</button>
       </div>
       <p class="last-time" data-last-time="${escapeAttr(trackKey)}" data-movement-id="${escapeAttr(movementId)}"></p>
@@ -432,15 +577,47 @@ function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, move
   `;
 }
 
-function renderSetRow(set, trackKey, movementId, movement, setIndex, setCount) {
+function renderSetRow(set, trackKey, movementId, movement, setIndex, setCount, mode = "strength") {
+  const firstField = mode === "time" ? "duration" : "weight";
+  const secondField = mode === "time" ? "load" : "reps";
+  const firstValue = mode === "time" ? set.duration || set.weight || "" : set.weight || "";
+  const secondValue = mode === "time" ? set.load || "" : set.reps || "";
+  const firstPlaceholder = mode === "time" ? "30s, 1:00..." : "0";
+  const secondPlaceholder = mode === "time" ? "Band, BW..." : "0";
+  const firstMode = mode === "time" ? "text" : "decimal";
+  const secondMode = mode === "time" ? "text" : "numeric";
   return `
     <div class="set-row">
       <div class="set-number">${setIndex + 1}</div>
-      <input class="set-input" inputmode="decimal" placeholder="0" value="${escapeAttr(set.weight || "")}" data-track="${escapeAttr(trackKey)}" data-set-index="${setIndex}" data-field="weight" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(movement)}" aria-label="Set ${setIndex + 1} weight in pounds">
-      <input class="set-input" inputmode="numeric" placeholder="0" value="${escapeAttr(set.reps || "")}" data-track="${escapeAttr(trackKey)}" data-set-index="${setIndex}" data-field="reps" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(movement)}" aria-label="Set ${setIndex + 1} reps">
+      <input class="set-input" inputmode="${firstMode}" placeholder="${escapeAttr(firstPlaceholder)}" value="${escapeAttr(firstValue)}" data-track="${escapeAttr(trackKey)}" data-set-index="${setIndex}" data-field="${firstField}" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(movement)}" aria-label="Set ${setIndex + 1} ${mode === "time" ? "time or result" : "weight in pounds"}">
+      <input class="set-input" inputmode="${secondMode}" placeholder="${escapeAttr(secondPlaceholder)}" value="${escapeAttr(secondValue)}" data-track="${escapeAttr(trackKey)}" data-set-index="${setIndex}" data-field="${secondField}" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(movement)}" aria-label="Set ${setIndex + 1} ${mode === "time" ? "load or setup" : "reps"}">
       <input class="set-input" placeholder="RPE, side..." value="${escapeAttr(set.notes || "")}" data-track="${escapeAttr(trackKey)}" data-set-index="${setIndex}" data-field="notes" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(movement)}" aria-label="Set ${setIndex + 1} notes">
       <button class="delete-set" type="button" data-track="${escapeAttr(trackKey)}" data-set-index="${setIndex}" ${setCount === 1 ? "disabled" : ""} aria-label="Delete set ${setIndex + 1}">x</button>
     </div>
+  `;
+}
+
+function renderExtraExercises(dayKey, dayIndex) {
+  const extras = readExtras(dayKey);
+  return `
+    <section class="seg extra-section">
+      <div class="seg-h">
+        <span class="seg-num">+</span>
+        <span class="seg-name">Additional Exercises</span>
+      </div>
+      <div class="extra-list">
+        ${extras.map((extra, extraIndex) => `
+          <div class="extra-item">
+            <div class="extra-editor">
+              <input class="extra-name" placeholder="Exercise name" value="${escapeAttr(extra.name || "")}" data-day-key="${escapeAttr(dayKey)}" data-extra-index="${extraIndex}">
+              <button class="remove-extra" type="button" data-day-key="${escapeAttr(dayKey)}" data-extra-index="${extraIndex}">Remove</button>
+            </div>
+            ${extra.name ? renderTrackedMovement(extra.name, `${dayKey}.extra`, dayIndex, 90, extraIndex, extra.name) : ""}
+          </div>
+        `).join("")}
+      </div>
+      <button class="add-extra" type="button" data-day-key="${escapeAttr(dayKey)}">Add exercise</button>
+    </section>
   `;
 }
 
@@ -512,8 +689,66 @@ function writeJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function getProgressBackup() {
+  return Object.keys(localStorage)
+    .filter((key) => key.startsWith("fit."))
+    .sort()
+    .reduce((backup, key) => {
+      backup[key] = localStorage.getItem(key);
+      return backup;
+    }, {});
+}
+
+function exportProgressBackup() {
+  const backup = {
+    app: "ibex-fitness-app",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    entries: getProgressBackup()
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `ibex-fitness-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importProgressBackup(file) {
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    try {
+      const backup = JSON.parse(String(reader.result || ""));
+      const entries = backup.entries && typeof backup.entries === "object" ? backup.entries : null;
+      if (!entries) throw new Error("Missing backup entries.");
+      const count = Object.keys(entries).filter((key) => key.startsWith("fit.")).length;
+      if (!count) throw new Error("No Ibex Fitness progress was found in this file.");
+      if (!confirm(`Import ${count} saved progress items from this backup? This will replace current saved progress in this browser.`)) return;
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith("fit."))
+        .forEach((key) => localStorage.removeItem(key));
+      Object.entries(entries)
+        .filter(([key]) => key.startsWith("fit."))
+        .forEach(([key, value]) => localStorage.setItem(key, String(value)));
+      state.week = Number(localStorage.getItem("fit.week") || 0);
+      state.expanded = false;
+      state.search = "";
+      state.openDays.clear();
+      $("#searchInput").value = "";
+      $("#expandBtn").textContent = "Expand all";
+      render();
+    } catch (error) {
+      alert(`That backup could not be imported. ${error.message}`);
+    }
+  });
+  reader.readAsText(file);
+}
+
 function blankSet() {
-  return { weight: "", reps: "", notes: "" };
+  return { weight: "", reps: "", duration: "", load: "", notes: "" };
 }
 
 function normalizeTrackEntry(entry) {
@@ -531,6 +766,35 @@ function normalizeTrackEntry(entry) {
   }
   normalized.sets = [blankSet()];
   return normalized;
+}
+
+function normalizeMetconEntry(entry) {
+  const normalized = entry && typeof entry === "object" ? { ...entry } : {};
+  return {
+    rounds: normalized.rounds || "",
+    reps: normalized.reps || "",
+    time: normalized.time || "",
+    notes: normalized.notes || "",
+    loads: normalized.loads && typeof normalized.loads === "object" ? normalized.loads : {},
+    updatedAt: normalized.updatedAt || ""
+  };
+}
+
+function readExtras(dayKey) {
+  const extras = readJson(`fit.extra.${dayKey}`, []);
+  return Array.isArray(extras) ? extras.map((item) => ({ name: item.name || "" })) : [];
+}
+
+function writeExtras(dayKey, extras) {
+  writeJson(`fit.extra.${dayKey}`, extras);
+}
+
+function trackingModeForMovement(category, rawMovement, prescription) {
+  const text = `${rawMovement || ""} ${prescription || ""}`.toLowerCase();
+  if (category === "core") return "time";
+  if (/plank|hold|hollow|copenhagen|bird-dog|mobility|stretch/.test(text)) return "time";
+  if (/\b\d+\s*(s|sec|seconds?|min|minutes?)\b/.test(text)) return "time";
+  return "strength";
 }
 
 function findLastEntry(movementId, trackKey) {
@@ -552,7 +816,7 @@ function updateLastTimePanels() {
   $$("[data-last-time]").forEach((panel) => {
     const last = findLastEntry(panel.dataset.movementId, panel.dataset.lastTime);
     const entry = last ? normalizeTrackEntry(last.value) : null;
-    const completedSets = entry ? entry.sets.filter((set) => set.weight || set.reps || set.notes) : [];
+    const completedSets = entry ? entry.sets.filter((set) => set.weight || set.reps || set.duration || set.load || set.notes) : [];
     if (!last || !completedSets.length) {
       panel.textContent = "Last time: no previous entry";
       return;
@@ -562,6 +826,8 @@ function updateLastTimePanels() {
         const parts = [];
         if (set.weight) parts.push(`${set.weight} lb`);
         if (set.reps) parts.push(`${set.reps} reps`);
+        if (set.duration) parts.push(set.duration);
+        if (set.load) parts.push(set.load);
         if (set.notes) parts.push(set.notes);
         return `S${index + 1} ${parts.join(" / ")}`;
       })
@@ -603,7 +869,20 @@ $("#expandBtn").addEventListener("click", () => {
   $$(".day").forEach((day) => day.classList.toggle("open", state.expanded));
 });
 
+$("#exportBtn").addEventListener("click", exportProgressBackup);
+
+$("#importBtn").addEventListener("click", () => {
+  $("#importFile").click();
+});
+
+$("#importFile").addEventListener("change", (event) => {
+  const file = event.target.files && event.target.files[0];
+  if (file) importProgressBackup(file);
+  event.target.value = "";
+});
+
 $("#resetBtn").addEventListener("click", () => {
+  if (!confirm("Reset all saved progress in this browser? Export a backup first if you want to keep it.")) return;
   Object.keys(localStorage)
     .filter((key) => key.startsWith("fit."))
     .forEach((key) => localStorage.removeItem(key));
