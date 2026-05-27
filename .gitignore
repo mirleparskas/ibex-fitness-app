@@ -2,3 +2,4 @@ cloudflared*.log
 cloudflared.pid
 .chrome-test/
 *.tmp
+data/progress.json

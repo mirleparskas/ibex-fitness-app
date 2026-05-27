@@ -7,6 +7,80 @@ const state = {
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+const progressSync = {
+  endpoint: "/api/progress",
+  supported: window.location.protocol !== "file:",
+  applying: false,
+  timer: null,
+  status: "Progress sync: local only"
+};
+
+const storageSetItem = Storage.prototype.setItem;
+const storageRemoveItem = Storage.prototype.removeItem;
+
+Storage.prototype.setItem = function patchedSetItem(key, value) {
+  storageSetItem.call(this, key, value);
+  if (this === localStorage && String(key).startsWith("fit.")) scheduleProgressSync();
+};
+
+Storage.prototype.removeItem = function patchedRemoveItem(key) {
+  storageRemoveItem.call(this, key);
+  if (this === localStorage && String(key).startsWith("fit.")) scheduleProgressSync();
+};
+
+function setSyncStatus(message) {
+  progressSync.status = message;
+  const status = $("#syncStatus");
+  if (status) status.textContent = message;
+}
+
+function scheduleProgressSync() {
+  if (!progressSync.supported || progressSync.applying) return;
+  window.clearTimeout(progressSync.timer);
+  progressSync.timer = window.setTimeout(saveServerProgress, 400);
+}
+
+async function loadServerProgress() {
+  if (!progressSync.supported) return;
+  try {
+    setSyncStatus("Progress sync: checking...");
+    const response = await fetch(progressSync.endpoint, { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const serverProgress = await response.json();
+    const serverEntries = serverProgress.entries && typeof serverProgress.entries === "object" ? serverProgress.entries : {};
+    const localEntries = getProgressBackup();
+    const mergedEntries = { ...serverEntries, ...localEntries };
+
+    progressSync.applying = true;
+    Object.entries(mergedEntries).forEach(([key, value]) => {
+      if (key.startsWith("fit.")) storageSetItem.call(localStorage, key, String(value));
+    });
+    progressSync.applying = false;
+
+    state.week = Number(localStorage.getItem("fit.week") || 0);
+    await saveServerProgress();
+    setSyncStatus(`Progress sync: saved ${Object.keys(mergedEntries).length} items`);
+  } catch (error) {
+    progressSync.applying = false;
+    setSyncStatus("Progress sync: local only");
+  }
+}
+
+async function saveServerProgress() {
+  if (!progressSync.supported || progressSync.applying) return;
+  try {
+    const entries = getProgressBackup();
+    const response = await fetch(progressSync.endpoint, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entries })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    setSyncStatus(`Progress sync: saved ${Object.keys(entries).length} items`);
+  } catch (error) {
+    setSyncStatus("Progress sync: local only");
+  }
+}
 
 function getWeekBlock(weekIndex) {
   return weekIndex < 4 ? 0 : 1;
@@ -33,7 +107,7 @@ function buildWeek(weekIndex) {
         liftSeg("1", "Primary - Hip Thrust", "Barbell hip thrust", p.hipThrust[weekIndex], a.upperPull, weekIndex === 2 || weekIndex === 6 ? "Backoff set: stop 1-2 reps before form breaks." : "Full lockout, ribs down, one-second squeeze every rep."),
         listSeg("2", "Secondary Strength", ["3x10 Romanian deadlift", "3x12 walking lunges"]),
         listSeg("3", "Glute Hypertrophy", a.gluteA),
-        listSeg("4", "Core Finisher", a.core)
+        listSeg("4", "Core Finisher", a.coreA)
       ]
     },
     {
@@ -58,7 +132,7 @@ function buildWeek(weekIndex) {
         liftSeg("1", "Primary - Back Squat", "Back squat", p.backSquat[weekIndex], a.upperPush, weekIndex === 2 || weekIndex === 6 ? "Backoff AMRAP: brace hard and stop one rep shy of failure." : "Below parallel, knees out, brace before every rep."),
         listSeg("2", "Secondary Strength", ["3x10 hip thrusts", "3x12/12 reverse lunges"]),
         listSeg("3", "Glute Hypertrophy", a.gluteB),
-        listSeg("4", "Pump Finisher", a.pump)
+        listSeg("4", "Quad / Hinge Pump", a.pump)
       ]
     },
     {
@@ -83,7 +157,7 @@ function buildWeek(weekIndex) {
         liftSeg("1", `Primary - ${deadliftPrimary ? "Deadlift" : "Romanian Deadlift"}`, deadliftPrimary ? "Conventional deadlift" : "Romanian deadlift", deadliftPrimary ? p.deadlift[weekIndex] : p.rdl[weekIndex], a.overhead, deadliftPrimary ? "Wedge in, push the floor away, reset any rep that drifts." : "Hips back, bar close, feel the hamstrings load."),
         listSeg("2", "Secondary Strength", ["4x12 barbell hip thrusts", "3x12 cable pull-throughs"]),
         listSeg("3", "Posterior Accessory", a.gluteC),
-        listSeg("4", "Core Finisher", a.core)
+        listSeg("4", "Core Finisher", a.coreB)
       ]
     },
     {
@@ -95,7 +169,7 @@ function buildWeek(weekIndex) {
         textSeg("WU", "Warm-up", PROGRAM.warmups.crossfit),
         liftSeg("1", "Strength - Push Press", "Push press", p.pushPress[weekIndex], null, "Vertical dip-drive, finish tall, lock out before lowering."),
         metconSeg("2", "Metcon", pick(m.long, weekIndex)),
-        listSeg("3", "Accessory", a.core)
+        listSeg("3", "Accessory", a.coreA)
       ]
     },
     {
@@ -332,6 +406,36 @@ function renderDays() {
     });
   });
 
+  $$(".hide-exercise").forEach((button) => {
+    button.addEventListener("click", () => {
+      localStorage.setItem(`fit.hidden.${button.dataset.track}`, "1");
+      captureOpenDays();
+      renderDays();
+      applySearch();
+    });
+  });
+
+  $$(".restore-exercise").forEach((button) => {
+    button.addEventListener("click", () => {
+      localStorage.removeItem(`fit.hidden.${button.dataset.track}`);
+      captureOpenDays();
+      renderDays();
+      applySearch();
+    });
+  });
+
+  $$(".complex-input").forEach((input) => {
+    input.addEventListener("input", () => {
+      const current = normalizeComplexEntry(readJson(`fit.complex.${input.dataset.track}`, {}), input.dataset.parts);
+      const partIndex = Number(input.dataset.partIndex);
+      current.parts[partIndex] = current.parts[partIndex] || { name: input.dataset.partName, reps: "", notes: "" };
+      current.parts[partIndex].name = input.dataset.partName;
+      current.parts[partIndex][input.dataset.field] = input.value;
+      current.updatedAt = new Date().toISOString();
+      writeJson(`fit.complex.${input.dataset.track}`, current);
+    });
+  });
+
   $$(".swap-select").forEach((select) => {
     select.addEventListener("change", () => {
       const value = select.value;
@@ -395,6 +499,7 @@ function renderSegment(segment, key, dayIndex, segIndex) {
     body = `
       <div class="rx-line">${escapeHtml(segment.prescription)}</div>
       ${movement}
+      ${renderComplexTracker(segment.movement, segment.prescription, key, dayIndex, segIndex)}
       ${segment.superset ? `<div class="superset">${segment.superset.map((item, itemIndex) => renderSupersetItem(item, key, dayIndex, segIndex, itemIndex)).join("")}</div>` : ""}
       <div class="goal"><b>Goal</b><span>${escapeHtml(segment.goal)}</span></div>
     `;
@@ -448,7 +553,7 @@ function renderListItem(item, segmentKey, dayIndex, segIndex, itemIndex) {
 }
 
 function isInstructionLine(item) {
-  return /^(?:\d+\s+rounds?|rest|nasal|keep it|quality|move well|easy|smooth)/i.test(String(item).trim());
+  return /^(?:\d+\s+(?:focused\s+)?rounds?|rest|nasal|keep it|quality|move well|easy|smooth)/i.test(String(item).trim());
 }
 
 function renderMetconMove(rawMovement, segmentKey, dayIndex, segIndex, movementIndex) {
@@ -542,6 +647,15 @@ function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, move
   const mode = trackingModeForMovement(category, rawMovement, prescription);
   const headings = mode === "time" ? ["Set", "Time / result", "Load", "Notes"] : ["Set", "Weight lb", "Reps", "Notes"];
 
+  if (localStorage.getItem(`fit.hidden.${trackKey}`) === "1") {
+    return `
+      <div class="deleted-exercise">
+        <span>${escapeHtml(activeMovement)} deleted from this workout.</span>
+        <button class="restore-exercise" type="button" data-track="${escapeAttr(trackKey)}">Restore</button>
+      </div>
+    `;
+  }
+
   return `
     <div class="movement-card" data-movement-id="${escapeAttr(movementId)}">
       <div class="movement-main">
@@ -549,7 +663,10 @@ function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, move
           <p class="plain movement-name">${escapeHtml(activeMovement)}</p>
           ${descriptor ? `<p class="movement-prescription">${escapeHtml(descriptor)}</p>` : ""}
         </div>
-        <span class="category-pill">${escapeHtml(labelForCategory(category))}</span>
+        <div class="movement-actions">
+          <span class="category-pill">${escapeHtml(labelForCategory(category))}</span>
+          <button class="hide-exercise" type="button" data-track="${escapeAttr(trackKey)}" aria-label="Delete ${escapeAttr(activeMovement)}">Delete</button>
+        </div>
       </div>
       <div class="movement-tools">
         <label>
@@ -593,6 +710,32 @@ function renderSetRow(set, trackKey, movementId, movement, setIndex, setCount, m
       <input class="set-input" inputmode="${secondMode}" placeholder="${escapeAttr(secondPlaceholder)}" value="${escapeAttr(secondValue)}" data-track="${escapeAttr(trackKey)}" data-set-index="${setIndex}" data-field="${secondField}" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(movement)}" aria-label="Set ${setIndex + 1} ${mode === "time" ? "load or setup" : "reps"}">
       <input class="set-input" placeholder="RPE, side..." value="${escapeAttr(set.notes || "")}" data-track="${escapeAttr(trackKey)}" data-set-index="${setIndex}" data-field="notes" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(movement)}" aria-label="Set ${setIndex + 1} notes">
       <button class="delete-set" type="button" data-track="${escapeAttr(trackKey)}" data-set-index="${setIndex}" ${setCount === 1 ? "disabled" : ""} aria-label="Delete set ${setIndex + 1}">x</button>
+    </div>
+  `;
+}
+
+function renderComplexTracker(rawMovement, prescription, segmentKey, dayIndex, segIndex) {
+  const category = categoryForMovement(rawMovement);
+  const parts = complexPartsFromPrescription(prescription);
+  if (category !== "olympic" || parts.length < 2) return "";
+
+  const trackKey = `w${state.week}.d${dayIndex}.s${segIndex}.complex`;
+  const saved = normalizeComplexEntry(readJson(`fit.complex.${trackKey}`, {}), parts);
+  const partsValue = parts.join("|");
+
+  return `
+    <div class="complex-tracker">
+      <div class="score-label">Complex reps per set</div>
+      ${parts.map((part, partIndex) => {
+        const row = saved.parts[partIndex] || { name: part, reps: "", notes: "" };
+        return `
+          <div class="complex-row">
+            <span>${escapeHtml(part)}</span>
+            <input class="complex-input" inputmode="numeric" placeholder="Reps" value="${escapeAttr(row.reps || "")}" data-track="${escapeAttr(trackKey)}" data-parts="${escapeAttr(partsValue)}" data-part-index="${partIndex}" data-part-name="${escapeAttr(part)}" data-field="reps">
+            <input class="complex-input" placeholder="Notes" value="${escapeAttr(row.notes || "")}" data-track="${escapeAttr(trackKey)}" data-parts="${escapeAttr(partsValue)}" data-part-index="${partIndex}" data-part-name="${escapeAttr(part)}" data-field="notes">
+          </div>
+        `;
+      }).join("")}
     </div>
   `;
 }
@@ -780,6 +923,20 @@ function normalizeMetconEntry(entry) {
   };
 }
 
+function normalizeComplexEntry(entry, partSource) {
+  const parts = Array.isArray(partSource) ? partSource : String(partSource || "").split("|").filter(Boolean);
+  const normalized = entry && typeof entry === "object" ? { ...entry } : {};
+  const savedParts = Array.isArray(normalized.parts) ? normalized.parts : [];
+  return {
+    parts: parts.map((name, index) => ({
+      name,
+      reps: savedParts[index]?.reps || "",
+      notes: savedParts[index]?.notes || ""
+    })),
+    updatedAt: normalized.updatedAt || ""
+  };
+}
+
 function readExtras(dayKey) {
   const extras = readJson(`fit.extra.${dayKey}`, []);
   return Array.isArray(extras) ? extras.map((item) => ({ name: item.name || "" })) : [];
@@ -787,6 +944,18 @@ function readExtras(dayKey) {
 
 function writeExtras(dayKey, extras) {
   writeJson(`fit.extra.${dayKey}`, extras);
+}
+
+function complexPartsFromPrescription(prescription) {
+  const text = String(prescription || "");
+  if (!text.includes("+")) return [];
+  const withoutLoad = text.replace(/\s*@.*$/i, "");
+  const afterColon = withoutLoad.includes(":") ? withoutLoad.split(":").slice(1).join(":") : withoutLoad;
+  return afterColon
+    .split("+")
+    .map((part) => part.replace(/^\s*\d+\s*x\s*\d+\s*/i, "").replace(/^\s*\d+\s*(?:x|sets?:)?\s*/i, "").trim())
+    .map((part) => part.replace(/\bOHS\b/i, "Overhead squat"))
+    .filter(Boolean);
 }
 
 function trackingModeForMovement(category, rawMovement, prescription) {
@@ -900,4 +1069,10 @@ $("#searchInput").addEventListener("input", (event) => {
   applySearch();
 });
 
-render();
+async function initApp() {
+  await loadServerProgress();
+  render();
+  setSyncStatus(progressSync.status);
+}
+
+initApp();

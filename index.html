@@ -35,6 +35,7 @@
       <button id="importBtn" type="button">Import backup</button>
       <input id="importFile" class="visually-hidden" type="file" accept="application/json">
       <button id="resetBtn" type="button">Reset progress</button>
+      <span id="syncStatus" class="sync-status" aria-live="polite">Progress sync: checking...</span>
     </section>
 
     <nav class="weeks" aria-label="Select week">
@@ -65,8 +66,8 @@
     <footer>
       <p>
         Use current 1RMs for percentages. Pick the conditioning tier that preserves
-        the intended stimulus. Checked workouts, selected tiers, and notes save in
-        this browser with localStorage.
+        the intended stimulus. Checked workouts, selected tiers, notes, and scores
+        sync through this app server when opened from phone or computer.
       </p>
       <p class="fineprint">
         This is a workout display tool, not medical advice. Scale loads and volume to
