@@ -1,29 +1,32 @@
 const PROGRAM = {
-  name: "Glute + Engine Split",
+  name: "Muscle + Conditioning Split",
   blocks: [
     {
-      name: "Block 1 - Accumulation",
+      name: "Block 1 - Restart",
       weeks: "Weeks 1-4",
-      summary: "Build volume, positions, and repeatable pacing. Hip-thrust, squat, and RDL bias with snatch and clean technique."
+      summary: "Rebuild consistency after time off with moderate loads, full-body lifting, glute-focused hypertrophy, and daily conditioning."
     },
     {
-      name: "Block 2 - Intensification",
+      name: "Block 2 - Build",
       weeks: "Weeks 5-8",
-      summary: "Heavier percentages, conventional deadlift focus, sharper metcons, and retest work in week 8."
+      summary: "Add load, reps, and density while keeping the daily cardio habit and prioritizing muscle, glutes, and tone."
     }
   ],
   warmups: {
     glute: "5 min bike or row easy. Then 2 rounds: 10 banded hip thrusts, 10 Cossack squats, 10 bird-dogs/side, 10 glute bridges with a 2-second squeeze.",
+    fullBody: "5 min easy machine. Then 2 rounds: 8 inchworms, 10 air squats, 10 ring rows, 10 glute bridges, 8 push-ups or incline push-ups.",
     crossfit: "3 min row or bike build. Then 2 rounds: 5 inchworms, 10 PVC pass-throughs, 10 air squats, 10 ring rows, 5 wall-walk holds."
   },
   progressions: {
-    hipThrust: ["4x8 @ 65%", "4x6 @ 70%", "5x5 @ 72% + AMRAP @ 60%", "Build to 3RM", "4x6 @ 72%", "5x5 @ 77%", "4x4 @ 82% + AMRAP @ 65%", "Build to 3RM"],
-    backSquat: ["4x6 @ 67%", "5x5 @ 72%", "5x4 @ 76% + AMRAP @ 65%", "Build to 3RM", "4x5 @ 73%", "5x4 @ 78%", "4x3 @ 83% + AMRAP @ 67%", "Build to 3RM"],
-    rdl: ["4x8 @ 60%", "4x8 @ 65%", "4x6 @ 70%", "3x6 @ 65%", "4x8 @ 67%", "4x6 @ 72%", "4x6 @ 75%", "3x6 @ 68%"],
+    hipThrust: ["3x10 @ RPE 6-7", "4x10 @ RPE 7", "4x8 @ RPE 7-8", "3x10 easy deload", "4x8 @ RPE 8", "5x6 @ RPE 8", "4x8 + 1 backoff set", "Build to smooth 6RM"],
+    backSquat: ["3x8 @ RPE 6-7", "4x8 @ RPE 7", "4x6 @ RPE 7-8", "3x8 easy deload", "4x6 @ RPE 8", "5x5 @ RPE 8", "4x6 + 1 backoff set", "Build to smooth 5RM"],
+    rdl: ["3x10 @ RPE 6-7", "4x10 @ RPE 7", "4x8 @ RPE 7-8", "3x10 easy deload", "4x8 @ RPE 8", "4x6 @ RPE 8", "4x8 + 1 backoff set", "Build to smooth 6RM"],
     deadlift: ["4x5 @ 70%", "5x4 @ 75%", "5x3 @ 80% + AMRAP @ 65%", "Build to 3RM", "4x4 @ 76%", "5x3 @ 81%", "4x3 @ 85% + AMRAP @ 68%", "Build to 3RM"],
+    bench: ["3x10 @ RPE 6-7", "4x10 @ RPE 7", "4x8 @ RPE 7-8", "3x10 easy deload", "4x8 @ RPE 8", "5x6 @ RPE 8", "4x8 + 1 backoff set", "Build to smooth 6RM"],
+    trapBar: ["3x8 @ RPE 6-7", "4x8 @ RPE 7", "4x6 @ RPE 7-8", "3x8 easy deload", "4x6 @ RPE 8", "5x5 @ RPE 8", "4x6 + 1 backoff set", "Build to smooth 5RM"],
     snatch: ["5 sets: 1 muscle snatch + 1 power snatch + 1 OHS @ 55%", "5 sets: 1 power snatch + 1 squat snatch @ 62%", "4 sets: 1 snatch pull + 1 squat snatch + 1 OHS @ 68%", "3x2 power snatch @ 60%", "5 sets: 1 hang power snatch + 1 squat snatch @ 65%", "4x2 squat snatch @ 72%", "3x2 squat snatch @ 78%", "Build to heavy single @ 85%"],
     cleanJerk: ["5 sets: 1 power clean + 1 front squat + 1 push jerk @ 58%", "5 sets: 1 clean + 1 jerk @ 64%", "4 sets: 1 clean pull + 1 clean + 1 split jerk @ 70%", "3x2 power clean @ 60%", "5 sets: 1 hang clean + 1 clean + 1 jerk @ 67%", "4x2 clean + jerk @ 74%", "3x2 clean + jerk @ 80%", "Build to heavy single @ 85%"],
-    pushPress: ["4x6 @ 65%", "5x5 @ 70%", "4x4 @ 75%", "3x4 @ 65%", "4x5 @ 72%", "4x4 @ 77%", "4x3 @ 82%", "3x3 @ 68%"]
+    pushPress: ["3x10 @ RPE 6-7", "4x8 @ RPE 7", "4x8 @ RPE 7-8", "3x10 easy deload", "4x6 @ RPE 8", "5x5 @ RPE 8", "4x6 + 1 backoff set", "Build to smooth 5RM"]
   },
   accessories: {
     upperPull: ["Superset with the main lift", "4x8 weighted pull-up or lat pulldown", "3x10 DB shoulder press"],
@@ -66,7 +69,7 @@ const PROGRAM = {
         goal: "Keep conditioning interesting while spreading fatigue across the whole body."
       },
       {
-        format: "Intervals 35-42 min",
+        format: "HIIT intervals 35-42 min",
         moves: ["8 min easy warm-up", "10 x 1:00 hard / 1:00 easy on run, bike, row, ski, or stairs", "7-14 min easy cool-down"],
         goal: "Use this 1-2 days per week when recovery is good."
       },

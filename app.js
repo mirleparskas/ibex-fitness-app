@@ -1,5 +1,7 @@
+const PLAN_KEY = "restart-muscle";
+
 const state = {
-  week: Number(localStorage.getItem("fit.week") || 0),
+  week: Number(localStorage.getItem(`fit.week.${PLAN_KEY}`) || 0),
   expanded: false,
   search: "",
   openDays: new Set()
@@ -57,7 +59,7 @@ async function loadServerProgress() {
     });
     progressSync.applying = false;
 
-    state.week = Number(localStorage.getItem("fit.week") || 0);
+    state.week = Number(localStorage.getItem(`fit.week.${PLAN_KEY}`) || 0);
     await saveServerProgress();
     setSyncStatus(`Progress sync: saved ${Object.keys(mergedEntries).length} items`);
   } catch (error) {
@@ -98,89 +100,84 @@ function pickDailyCardio(weekIndex, dayIndex) {
 function buildWeek(weekIndex) {
   const p = PROGRAM.progressions;
   const a = PROGRAM.accessories;
-  const m = PROGRAM.metcons;
-  const deadliftPrimary = getWeekBlock(weekIndex) === 1;
 
   return [
     {
       type: "g",
       tag: "G1",
-      title: "Glute Full-Body - Hip Hinge",
-      focus: "Hip thrust primary - vertical pull",
+      title: "Glute Focus - Thrust + Pull",
+      focus: "30-45 min cardio, then 30-40 min glute and upper pull lifting",
       segments: [
+        cardioSeg("1", "Cardio / Conditioning", pickDailyCardio(weekIndex, 0)),
         textSeg("WU", "Warm-up", PROGRAM.warmups.glute),
-        liftSeg("1", "Primary - Hip Thrust", "Barbell hip thrust", p.hipThrust[weekIndex], a.upperPull, weekIndex === 2 || weekIndex === 6 ? "Backoff set: stop 1-2 reps before form breaks." : "Full lockout, ribs down, one-second squeeze every rep."),
-        listSeg("2", "Secondary Strength", ["3x10 Romanian deadlift", "3x12 walking lunges"]),
-        listSeg("3", "Glute Hypertrophy", a.gluteA),
-        listSeg("4", "Core Finisher", a.coreA),
-        cardioSeg("5", "Daily Cardio", pickDailyCardio(weekIndex, 0))
+        liftSeg("2", "Primary Lift", "Barbell hip thrust", p.hipThrust[weekIndex], a.upperPull, "Full lockout, ribs down, one-second squeeze every rep."),
+        listSeg("3", "Glute Hypertrophy", ["3x10 Romanian deadlift", "3x12/12 walking lunges", "2x15 cable or banded kickbacks/side"]),
+        listSeg("4", "Core", a.coreA)
       ]
     },
     {
       type: "c",
-      tag: "C1",
-      title: "Full-Body Olympic - Snatch + Metcon",
-      focus: `Snatch progression plus full-body conditioning - ${pick(m.snatch, weekIndex).format}`,
+      tag: "F1",
+      title: "Full Body - Push / Pull / Legs",
+      focus: "30-45 min cardio, then 30-40 min balanced muscle-building work",
       segments: [
-        textSeg("WU", "Warm-up", PROGRAM.warmups.crossfit),
-        liftSeg("1", "Skill - Snatch", "Snatch complex", p.snatch[weekIndex], null, "Speed under the bar matters more than load."),
-        metconSeg("2", "Metcon", pick(m.snatch, weekIndex)),
-        listSeg("3", "Accessory", a.arms),
-        cardioSeg("4", "Daily Cardio", pickDailyCardio(weekIndex, 1))
+        cardioSeg("1", "Cardio / HIIT", pickDailyCardio(weekIndex, 1)),
+        textSeg("WU", "Warm-up", PROGRAM.warmups.fullBody),
+        liftSeg("2", "Primary Lift", "DB bench press", p.bench[weekIndex], null, "Use a load that leaves 1-2 good reps in reserve."),
+        listSeg("3", "Full-Body Superset", ["3x10 chest-supported row", "3x10 goblet squats", "3x12 DB shoulder press"]),
+        listSeg("4", "Core / Carry", ["3x30-45s farmer carry", "3x10 dead bugs/side"])
       ]
     },
     {
       type: "g",
       tag: "G2",
-      title: "Glute Full-Body - Squat",
-      focus: "Back squat primary - horizontal press",
+      title: "Glute Focus - Squat + Shape",
+      focus: "30-45 min cardio, then 30-40 min squat and glute hypertrophy",
       segments: [
+        cardioSeg("1", "Cardio / Conditioning", pickDailyCardio(weekIndex, 2)),
         textSeg("WU", "Warm-up", PROGRAM.warmups.glute),
-        liftSeg("1", "Primary - Back Squat", "Back squat", p.backSquat[weekIndex], a.upperPush, weekIndex === 2 || weekIndex === 6 ? "Backoff AMRAP: brace hard and stop one rep shy of failure." : "Below parallel, knees out, brace before every rep."),
-        listSeg("2", "Secondary Strength", ["3x10 hip thrusts", "3x12/12 reverse lunges"]),
-        listSeg("3", "Glute Hypertrophy", a.gluteB),
-        listSeg("4", "Quad / Hinge Pump", a.pump),
-        cardioSeg("5", "Daily Cardio", pickDailyCardio(weekIndex, 2))
+        liftSeg("2", "Primary Lift", "Back squat", p.backSquat[weekIndex], a.upperPush, "Below parallel if available, brace before every rep, and keep the tempo controlled."),
+        listSeg("3", "Glute / Quad Work", ["3x10 hip thrusts", "3x12/12 reverse lunges", "2x15 seated hip abduction"]),
+        listSeg("4", "Pump Finish", a.pump)
       ]
     },
     {
       type: "c",
-      tag: "C2",
-      title: "Full-Body Olympic - Clean & Jerk + Metcon",
-      focus: `Clean & jerk progression plus full-body conditioning - ${pick(m.cleanJerk, weekIndex).format}`,
+      tag: "F2",
+      title: "Full Body - Hinge / Upper",
+      focus: "30-45 min cardio, then 30-40 min full-body strength without Olympic lifts",
       segments: [
-        textSeg("WU", "Warm-up", PROGRAM.warmups.crossfit),
-        liftSeg("1", "Skill - Clean & Jerk", "Clean & jerk complex", p.cleanJerk[weekIndex], null, "Fast elbows, strong front rack, no ugly jerks."),
-        metconSeg("2", "Metcon", pick(m.cleanJerk, weekIndex)),
-        listSeg("3", "Engine", a.engine),
-        cardioSeg("4", "Daily Cardio", pickDailyCardio(weekIndex, 3))
+        cardioSeg("1", "Cardio / EMOM", pickDailyCardio(weekIndex, 3)),
+        textSeg("WU", "Warm-up", PROGRAM.warmups.fullBody),
+        liftSeg("2", "Primary Lift", "Trap-bar deadlift", p.trapBar[weekIndex], null, "Push the floor away and stop each set before your back position changes."),
+        listSeg("3", "Full-Body Accessories", ["3x10 incline DB press", "3x10 lat pulldown", "3x12 step-ups/side"]),
+        listSeg("4", "Core", ["3x12 Pallof presses/side", "3x30s side plank/side"])
       ]
     },
     {
       type: "g",
       tag: "G3",
-      title: "Glute Full-Body - Pull",
-      focus: `${deadliftPrimary ? "Deadlift" : "RDL"} primary - overhead press`,
+      title: "Glute Focus - Posterior Chain",
+      focus: "30-45 min cardio, then 30-40 min hamstrings, glutes, and back",
       segments: [
+        cardioSeg("1", "Cardio / Conditioning", pickDailyCardio(weekIndex, 4)),
         textSeg("WU", "Warm-up", PROGRAM.warmups.glute),
-        liftSeg("1", `Primary - ${deadliftPrimary ? "Deadlift" : "Romanian Deadlift"}`, deadliftPrimary ? "Conventional deadlift" : "Romanian deadlift", deadliftPrimary ? p.deadlift[weekIndex] : p.rdl[weekIndex], a.overhead, deadliftPrimary ? "Wedge in, push the floor away, reset any rep that drifts." : "Hips back, bar close, feel the hamstrings load."),
-        listSeg("2", "Secondary Strength", ["4x12 barbell hip thrusts", "3x12 cable pull-throughs"]),
-        listSeg("3", "Posterior Accessory", a.gluteC),
-        listSeg("4", "Core Finisher", a.coreB),
-        cardioSeg("5", "Daily Cardio", pickDailyCardio(weekIndex, 4))
+        liftSeg("2", "Primary Lift", "Romanian deadlift", p.rdl[weekIndex], a.overhead, "Hips back, bar close, feel the hamstrings load, and keep tension the whole set."),
+        listSeg("3", "Glute / Hamstring Work", ["3x12 cable pull-throughs", "3x12 knee-high step-ups/side", "2x15 back extensions with glute squeeze"]),
+        listSeg("4", "Core", a.coreB)
       ]
     },
     {
       type: "c",
-      tag: "C3",
-      title: "Full-Body Strength + Long Metcon",
-      focus: `Push press plus full-body conditioning - ${pick(m.long, weekIndex).format}`,
+      tag: "F3",
+      title: "Full Body - Pump + Athletic",
+      focus: "30-45 min cardio, then 30-40 min full-body pump work",
       segments: [
-        textSeg("WU", "Warm-up", PROGRAM.warmups.crossfit),
-        liftSeg("1", "Strength - Push Press", "Push press", p.pushPress[weekIndex], null, "Vertical dip-drive, finish tall, lock out before lowering."),
-        metconSeg("2", "Metcon", pick(m.long, weekIndex)),
-        listSeg("3", "Accessory", a.coreA),
-        cardioSeg("4", "Daily Cardio", pickDailyCardio(weekIndex, 5))
+        cardioSeg("1", "Cardio / Intervals", pickDailyCardio(weekIndex, 5)),
+        textSeg("WU", "Warm-up", PROGRAM.warmups.fullBody),
+        liftSeg("2", "Primary Lift", "Push press", p.pushPress[weekIndex], null, "Drive with the legs, finish tall, and keep reps crisp."),
+        listSeg("3", "Full-Body Circuit", ["3 rounds: 10 leg press", "10 cable row", "10 DB RDLs", "12 push-ups or DB bench press"]),
+        listSeg("4", "Tone Finish", ["2x15 lateral raises", "2x15 cable kickbacks/side", "2x12 hammer curls"])
       ]
     },
     {
@@ -217,7 +214,7 @@ function cardioSeg(num, name, cardio) {
 }
 
 function render() {
-  localStorage.setItem("fit.week", String(state.week));
+  localStorage.setItem(`fit.week.${PLAN_KEY}`, String(state.week));
   renderTabs();
   renderBanner();
   renderDays();
@@ -259,7 +256,7 @@ function renderDays() {
   const list = $("#dayList");
   list.innerHTML = "";
   buildWeek(state.week).forEach((day, dayIndex) => {
-    const key = `w${state.week}.d${dayIndex}`;
+    const key = `w${state.week}.${PLAN_KEY}.d${dayIndex}`;
     const isOpen = state.expanded || state.openDays.has(key);
     const card = document.createElement("article");
     card.className = `day${isOpen ? " open" : ""}`;
@@ -603,8 +600,8 @@ function renderMetconMove(rawMovement, segmentKey, dayIndex, segIndex, movementI
   const base = cleanMovementName(rawMovement);
   const category = categoryForMovement(base);
   const movementId = `${category}.${slug(base)}`;
-  const instanceKey = `fit.swap.instance.w${state.week}.d${dayIndex}.s${segIndex}.m${movementIndex}`;
-  const blockKey = `fit.swap.block.b${getWeekBlock(state.week)}.${movementId}`;
+  const instanceKey = `fit.swap.instance.${PLAN_KEY}.w${state.week}.d${dayIndex}.s${segIndex}.m${movementIndex}`;
+  const blockKey = `fit.swap.block.${PLAN_KEY}.b${getWeekBlock(state.week)}.${movementId}`;
   const blockSwap = localStorage.getItem(blockKey);
   const instanceSwap = localStorage.getItem(instanceKey);
   const activeMovement = blockSwap || instanceSwap || base;
@@ -642,8 +639,8 @@ function renderMetconTracking(mc, key, dayIndex, segIndex) {
     const base = cleanMovementName(move);
     const category = categoryForMovement(base);
     const movementId = `${category}.${slug(base)}`;
-    const instanceKey = `fit.swap.instance.w${state.week}.d${dayIndex}.s${segIndex}.m${moveIndex}`;
-    const blockKey = `fit.swap.block.b${getWeekBlock(state.week)}.${movementId}`;
+    const instanceKey = `fit.swap.instance.${PLAN_KEY}.w${state.week}.d${dayIndex}.s${segIndex}.m${moveIndex}`;
+    const blockKey = `fit.swap.block.${PLAN_KEY}.b${getWeekBlock(state.week)}.${movementId}`;
     const activeMovement = localStorage.getItem(blockKey) || localStorage.getItem(instanceKey) || base;
     const savedLoad = saved.loads[movementId]?.load || "";
     return `
@@ -677,12 +674,12 @@ function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, move
   const base = cleanMovementName(rawMovement);
   const category = categoryForMovement(base);
   const movementId = `${category}.${slug(base)}`;
-  const instanceKey = `fit.swap.instance.w${state.week}.d${dayIndex}.s${segIndex}.m${movementIndex}`;
-  const blockKey = `fit.swap.block.b${getWeekBlock(state.week)}.${movementId}`;
+  const instanceKey = `fit.swap.instance.${PLAN_KEY}.w${state.week}.d${dayIndex}.s${segIndex}.m${movementIndex}`;
+  const blockKey = `fit.swap.block.${PLAN_KEY}.b${getWeekBlock(state.week)}.${movementId}`;
   const blockSwap = localStorage.getItem(blockKey);
   const instanceSwap = localStorage.getItem(instanceKey);
   const activeMovement = blockSwap || instanceSwap || base;
-  const trackKey = `w${state.week}.d${dayIndex}.s${segIndex}.m${movementIndex}`;
+  const trackKey = `${segmentKey}.m${movementIndex}`;
   const saved = normalizeTrackEntry(readJson(`fit.track.${trackKey}`, {}));
   const options = optionsForCategory(category, base);
   const optionList = options.includes(activeMovement) ? options : [activeMovement, ...options];
@@ -762,7 +759,7 @@ function renderComplexTracker(rawMovement, prescription, segmentKey, dayIndex, s
   const parts = complexPartsFromPrescription(prescription);
   if (category !== "olympic" || parts.length < 2) return "";
 
-  const trackKey = `w${state.week}.d${dayIndex}.s${segIndex}.complex`;
+  const trackKey = `${segmentKey}.complex`;
   const saved = normalizeComplexEntry(readJson(`fit.complex.${trackKey}`, {}), parts);
   const partsValue = parts.join("|");
 
@@ -833,9 +830,9 @@ function categoryForMovement(movement) {
   if (/hip thrust|glute|bridge|kickback|abduction|frog|reverse hyper/.test(text)) return "glute";
   if (/squat|lunge|step-up|wall ball|leg press/.test(text)) return "squat";
   if (/deadlift|rdl|hinge|pull-through|swing|hamstring|good morning|extension/.test(text)) return "hinge";
-  if (/bike|row|run|ski|burpee|box|double|single|cal|devil/.test(text)) return "conditioning";
-  if (/press|push-up|bench|dip|hspu|thruster/.test(text)) return "press";
+  if (/press|push-up|bench|dip|hspu|thruster|raise/.test(text)) return "press";
   if (/pull|row|curl|toes-to-bar|knee raise|muscle-up/.test(text)) return "pull";
+  if (/bike|run|ski|stair|burpee|box|double|single|cal|devil|emom/.test(text)) return "conditioning";
   if (/plank|sit-up|v-up|hollow|russian|core|copenhagen|bird-dog/.test(text)) return "core";
   return "conditioning";
 }
@@ -919,7 +916,7 @@ function importProgressBackup(file) {
       Object.entries(entries)
         .filter(([key]) => key.startsWith("fit."))
         .forEach(([key, value]) => localStorage.setItem(key, String(value)));
-      state.week = Number(localStorage.getItem("fit.week") || 0);
+      state.week = Number(localStorage.getItem(`fit.week.${PLAN_KEY}`) || 0);
       state.expanded = false;
       state.search = "";
       state.openDays.clear();
