@@ -90,6 +90,11 @@ function pick(items, weekIndex) {
   return items[weekIndex] || items[weekIndex % items.length];
 }
 
+function pickDailyCardio(weekIndex, dayIndex) {
+  const options = PROGRAM.cardio?.daily || [];
+  return options.length ? options[(weekIndex + dayIndex) % options.length] : null;
+}
+
 function buildWeek(weekIndex) {
   const p = PROGRAM.progressions;
   const a = PROGRAM.accessories;
@@ -107,19 +112,21 @@ function buildWeek(weekIndex) {
         liftSeg("1", "Primary - Hip Thrust", "Barbell hip thrust", p.hipThrust[weekIndex], a.upperPull, weekIndex === 2 || weekIndex === 6 ? "Backoff set: stop 1-2 reps before form breaks." : "Full lockout, ribs down, one-second squeeze every rep."),
         listSeg("2", "Secondary Strength", ["3x10 Romanian deadlift", "3x12 walking lunges"]),
         listSeg("3", "Glute Hypertrophy", a.gluteA),
-        listSeg("4", "Core Finisher", a.coreA)
+        listSeg("4", "Core Finisher", a.coreA),
+        cardioSeg("5", "Daily Cardio", pickDailyCardio(weekIndex, 0))
       ]
     },
     {
       type: "c",
       tag: "C1",
-      title: "Olympic - Snatch + Metcon",
-      focus: `Snatch progression - ${pick(m.snatch, weekIndex).format}`,
+      title: "Full-Body Olympic - Snatch + Metcon",
+      focus: `Snatch progression plus full-body conditioning - ${pick(m.snatch, weekIndex).format}`,
       segments: [
         textSeg("WU", "Warm-up", PROGRAM.warmups.crossfit),
         liftSeg("1", "Skill - Snatch", "Snatch complex", p.snatch[weekIndex], null, "Speed under the bar matters more than load."),
         metconSeg("2", "Metcon", pick(m.snatch, weekIndex)),
-        listSeg("3", "Accessory", a.arms)
+        listSeg("3", "Accessory", a.arms),
+        cardioSeg("4", "Daily Cardio", pickDailyCardio(weekIndex, 1))
       ]
     },
     {
@@ -132,19 +139,21 @@ function buildWeek(weekIndex) {
         liftSeg("1", "Primary - Back Squat", "Back squat", p.backSquat[weekIndex], a.upperPush, weekIndex === 2 || weekIndex === 6 ? "Backoff AMRAP: brace hard and stop one rep shy of failure." : "Below parallel, knees out, brace before every rep."),
         listSeg("2", "Secondary Strength", ["3x10 hip thrusts", "3x12/12 reverse lunges"]),
         listSeg("3", "Glute Hypertrophy", a.gluteB),
-        listSeg("4", "Quad / Hinge Pump", a.pump)
+        listSeg("4", "Quad / Hinge Pump", a.pump),
+        cardioSeg("5", "Daily Cardio", pickDailyCardio(weekIndex, 2))
       ]
     },
     {
       type: "c",
       tag: "C2",
-      title: "Olympic - Clean & Jerk + Metcon",
-      focus: `Clean & jerk progression - ${pick(m.cleanJerk, weekIndex).format}`,
+      title: "Full-Body Olympic - Clean & Jerk + Metcon",
+      focus: `Clean & jerk progression plus full-body conditioning - ${pick(m.cleanJerk, weekIndex).format}`,
       segments: [
         textSeg("WU", "Warm-up", PROGRAM.warmups.crossfit),
         liftSeg("1", "Skill - Clean & Jerk", "Clean & jerk complex", p.cleanJerk[weekIndex], null, "Fast elbows, strong front rack, no ugly jerks."),
         metconSeg("2", "Metcon", pick(m.cleanJerk, weekIndex)),
-        listSeg("3", "Engine", a.engine)
+        listSeg("3", "Engine", a.engine),
+        cardioSeg("4", "Daily Cardio", pickDailyCardio(weekIndex, 3))
       ]
     },
     {
@@ -157,28 +166,31 @@ function buildWeek(weekIndex) {
         liftSeg("1", `Primary - ${deadliftPrimary ? "Deadlift" : "Romanian Deadlift"}`, deadliftPrimary ? "Conventional deadlift" : "Romanian deadlift", deadliftPrimary ? p.deadlift[weekIndex] : p.rdl[weekIndex], a.overhead, deadliftPrimary ? "Wedge in, push the floor away, reset any rep that drifts." : "Hips back, bar close, feel the hamstrings load."),
         listSeg("2", "Secondary Strength", ["4x12 barbell hip thrusts", "3x12 cable pull-throughs"]),
         listSeg("3", "Posterior Accessory", a.gluteC),
-        listSeg("4", "Core Finisher", a.coreB)
+        listSeg("4", "Core Finisher", a.coreB),
+        cardioSeg("5", "Daily Cardio", pickDailyCardio(weekIndex, 4))
       ]
     },
     {
       type: "c",
       tag: "C3",
-      title: "Strength + Long Metcon",
-      focus: `Push press - ${pick(m.long, weekIndex).format}`,
+      title: "Full-Body Strength + Long Metcon",
+      focus: `Push press plus full-body conditioning - ${pick(m.long, weekIndex).format}`,
       segments: [
         textSeg("WU", "Warm-up", PROGRAM.warmups.crossfit),
         liftSeg("1", "Strength - Push Press", "Push press", p.pushPress[weekIndex], null, "Vertical dip-drive, finish tall, lock out before lowering."),
         metconSeg("2", "Metcon", pick(m.long, weekIndex)),
-        listSeg("3", "Accessory", a.coreA)
+        listSeg("3", "Accessory", a.coreA),
+        cardioSeg("4", "Daily Cardio", pickDailyCardio(weekIndex, 5))
       ]
     },
     {
       type: "r",
       tag: "R",
       title: "Rest / Active Recovery",
-      focus: "Walk - mobility - easy Zone 2",
+      focus: "30-45 min easy cardio - mobility - recovery",
       segments: [
-        textSeg("-", "Optional", "20-40 min easy walk or bike. Add 10-15 min hips, ankles, and T-spine mobility. Eat enough protein and sleep.")
+        cardioSeg("1", "Daily Cardio", pickDailyCardio(weekIndex, 6)),
+        textSeg("2", "Recovery", "Add 10-15 min hips, ankles, and T-spine mobility. Eat enough protein and sleep.")
       ]
     }
   ];
@@ -198,6 +210,10 @@ function listSeg(num, name, items) {
 
 function metconSeg(num, name, metcon) {
   return { kind: "metcon", num, name, metcon };
+}
+
+function cardioSeg(num, name, cardio) {
+  return { kind: "cardio", num, name, cardio };
 }
 
 function render() {
@@ -527,6 +543,21 @@ function renderSegment(segment, key, dayIndex, segIndex) {
     `;
   }
 
+  if (segment.kind === "cardio" && segment.cardio) {
+    const cardio = segment.cardio;
+    body = `
+      <div class="metcon cardio">
+        <div class="metcon-title">${escapeHtml(cardio.format)}</div>
+        <div class="metcon-block">
+          ${cardio.moves.map((move) => `<p class="plain movement-name">${escapeHtml(move)}</p>`).join("")}
+        </div>
+        <span class="cap">Daily target: 30-45 minutes</span>
+        ${renderCardioTracking(key)}
+        <div class="goal"><b>Goal</b><span>${escapeHtml(cardio.goal)}</span></div>
+      </div>
+    `;
+  }
+
   return `
     <section class="seg">
       <div class="seg-h">
@@ -535,6 +566,18 @@ function renderSegment(segment, key, dayIndex, segIndex) {
       </div>
       ${body}
     </section>
+  `;
+}
+
+function renderCardioTracking(key) {
+  const saved = normalizeMetconEntry(readJson(`fit.metcon.${key}`, {}));
+  return `
+    <div class="metcon-score">
+      <div class="score-grid time-score">
+        <label><span>Duration / distance</span><input class="metcon-input" placeholder="35 min, 3 mi, 250 floors..." value="${escapeAttr(saved.time)}" data-key="${escapeAttr(key)}" data-field="time"></label>
+        <label><span>Cardio notes</span><input class="metcon-input" placeholder="Run, stairs, EMOM, pace, HR..." value="${escapeAttr(saved.notes)}" data-key="${escapeAttr(key)}" data-field="notes"></label>
+      </div>
+    </div>
   `;
 }
 
@@ -1007,7 +1050,7 @@ function updateLastTimePanels() {
 
 function labelForType(type) {
   if (type === "g") return "Glute - Full Body";
-  if (type === "c") return "CrossFit - Olympic";
+  if (type === "c") return "Full Body - Conditioning";
   return "Recovery";
 }
 

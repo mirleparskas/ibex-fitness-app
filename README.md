@@ -18,11 +18,14 @@ Use the Reset Progress button to clear saved local data.
 ## Plan Structure
 
 - Day 1: Glute full-body, hip thrust focus
-- Day 2: Snatch progression and metcon
+- Day 2: Full-body snatch progression and metcon
 - Day 3: Glute full-body, squat focus
-- Day 4: Clean and jerk progression and metcon
+- Day 4: Full-body clean and jerk progression and metcon
 - Day 5: Glute full-body, RDL/deadlift focus
-- Day 6: Push press and longer metcon
+- Day 6: Full-body push press and longer metcon
 - Day 7: Rest or active recovery
 
 Weeks 4 and 8 are test/retest weeks.
+Every day includes a 30-45 minute cardio target, with running, StairMaster,
+EMOM, incline walk, machine mix, interval, and recovery options rotated through
+the week.

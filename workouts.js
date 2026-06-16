@@ -38,6 +38,45 @@ const PROGRAM = {
     pump: ["2 rounds, rest 60s between rounds", "15 goblet squats", "15 KB RDLs"],
     engine: ["18-22 min Zone 2 row, bike, ski, or run", "Nasal-breathing pace", "Keep it conversational"]
   },
+  cardio: {
+    daily: [
+      {
+        format: "30-45 min steady run",
+        moves: ["Easy conversational pace", "Option: finish with 4 x 20s relaxed strides", "Keep this Zone 2 unless you feel unusually fresh."],
+        goal: "Build the daily aerobic base without taking away from the strength work."
+      },
+      {
+        format: "30-45 min StairMaster",
+        moves: ["Level you can hold without leaning on the rails", "Every 5:00 add 30s strong climb", "Stay smooth through the final 10 minutes."],
+        goal: "Glute-friendly conditioning with steady breathing and no leg burnout."
+      },
+      {
+        format: "EMOM 30-40",
+        moves: ["Min 1: 12/10 cal bike or row", "Min 2: 12 KB swings or light DB snatches", "Min 3: 10 burpees, step-ups, or box step-overs", "Min 4: easy walk/breathing reset"],
+        goal: "Use movements that feel good that day and keep every minute repeatable."
+      },
+      {
+        format: "30-45 min incline walk",
+        moves: ["Treadmill incline 8-15%", "Pace fast enough to breathe deeply but talk", "Option: hold light DBs for the final 10 minutes."],
+        goal: "Low-impact daily volume when running or metcons would be too much."
+      },
+      {
+        format: "30-45 min mixed machine",
+        moves: ["10-15 min row", "10-15 min bike", "10-15 min ski or StairMaster", "Move directly between machines."],
+        goal: "Keep conditioning interesting while spreading fatigue across the whole body."
+      },
+      {
+        format: "Intervals 35-42 min",
+        moves: ["8 min easy warm-up", "10 x 1:00 hard / 1:00 easy on run, bike, row, ski, or stairs", "7-14 min easy cool-down"],
+        goal: "Use this 1-2 days per week when recovery is good."
+      },
+      {
+        format: "30-45 min recovery cardio",
+        moves: ["Walk, easy bike, easy row, or light swim", "Nasal breathing as much as possible", "Add 10 min mobility after if hips or calves feel tight."],
+        goal: "Get the daily cardio done while still treating the day as recovery."
+      }
+    ]
+  },
   metcons: {
     snatch: [
       { format: "AMRAP 18:00", moves: ["15 cal row", "12 KB swings", "9 box jump-overs", "6 alternating DB snatches"], tiers: { L1: "KB 26 lb / DB 25 lb / 20 in box", L2: "KB 35 lb / DB 35 lb / 24 in box", L3: "KB 53 lb / DB 50 lb / 24 in box" }, cap: "18 min / score rounds + reps", goal: "Stay steady. Aim for 5-6 rounds without standing around." },
