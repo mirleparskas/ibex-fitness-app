@@ -571,7 +571,7 @@ function renderCardioOptions(cardio) {
   if (!Array.isArray(cardio.options) || !cardio.options.length) return "";
   return `
     <p class="loads cardio-options">
-      <b>Machine options:</b> ${cardio.options.map(escapeHtml).join(" / ")}
+      <b>Options / swaps:</b> ${cardio.options.map(escapeHtml).join(" / ")}
     </p>
   `;
 }
