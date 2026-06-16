@@ -46,36 +46,43 @@ const PROGRAM = {
       {
         format: "30-45 min steady run",
         moves: ["Easy conversational pace", "Option: finish with 4 x 20s relaxed strides", "Keep this Zone 2 unless you feel unusually fresh."],
+        options: ["StairMaster steady climb", "Bike Zone 2", "Row Zone 2", "Ski erg easy", "Elliptical", "Incline treadmill walk"],
         goal: "Build the daily aerobic base without taking away from the strength work."
       },
       {
         format: "30-45 min StairMaster",
         moves: ["Level you can hold without leaning on the rails", "Every 5:00 add 30s strong climb", "Stay smooth through the final 10 minutes."],
+        options: ["Incline treadmill walk", "Bike climb intervals", "Elliptical hill mode", "Sled push intervals", "Row steady"],
         goal: "Glute-friendly conditioning with steady breathing and no leg burnout."
       },
       {
         format: "EMOM 30-40",
         moves: ["Min 1: 12/10 cal bike or row", "Min 2: 12 KB swings or light DB snatches", "Min 3: 10 burpees, step-ups, or box step-overs", "Min 4: easy walk/breathing reset"],
+        options: ["Bike + step-ups", "Row + KB swings", "Ski + box step-overs", "Treadmill incline + DB work", "StairMaster + bodyweight"],
         goal: "Use movements that feel good that day and keep every minute repeatable."
       },
       {
         format: "30-45 min incline walk",
         moves: ["Treadmill incline 8-15%", "Pace fast enough to breathe deeply but talk", "Option: hold light DBs for the final 10 minutes."],
+        options: ["Outdoor walk", "StairMaster easy", "Elliptical", "Bike Zone 2", "Row easy"],
         goal: "Low-impact daily volume when running or metcons would be too much."
       },
       {
         format: "30-45 min mixed machine",
         moves: ["10-15 min row", "10-15 min bike", "10-15 min ski or StairMaster", "Move directly between machines."],
+        options: ["Bike + StairMaster + incline walk", "Row + elliptical + bike", "Ski + row + walk", "One machine steady for 30-45 min"],
         goal: "Keep conditioning interesting while spreading fatigue across the whole body."
       },
       {
         format: "HIIT intervals 35-42 min",
         moves: ["8 min easy warm-up", "10 x 1:00 hard / 1:00 easy on run, bike, row, ski, or stairs", "7-14 min easy cool-down"],
+        options: ["Treadmill run intervals", "Bike intervals", "Row intervals", "Ski erg intervals", "StairMaster hard/easy", "Elliptical intervals"],
         goal: "Use this 1-2 days per week when recovery is good."
       },
       {
         format: "30-45 min recovery cardio",
         moves: ["Walk, easy bike, easy row, or light swim", "Nasal breathing as much as possible", "Add 10 min mobility after if hips or calves feel tight."],
+        options: ["Easy bike", "Easy row", "Elliptical", "Incline walk", "Light swim", "Mobility walk"],
         goal: "Get the daily cardio done while still treating the day as recovery."
       }
     ]

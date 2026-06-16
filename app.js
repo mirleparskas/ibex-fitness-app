@@ -548,6 +548,7 @@ function renderSegment(segment, key, dayIndex, segIndex) {
         <div class="metcon-block">
           ${cardio.moves.map((move) => `<p class="plain movement-name">${escapeHtml(move)}</p>`).join("")}
         </div>
+        ${renderCardioOptions(cardio)}
         <span class="cap">Daily target: 30-45 minutes</span>
         ${renderCardioTracking(key)}
         <div class="goal"><b>Goal</b><span>${escapeHtml(cardio.goal)}</span></div>
@@ -563,6 +564,15 @@ function renderSegment(segment, key, dayIndex, segIndex) {
       </div>
       ${body}
     </section>
+  `;
+}
+
+function renderCardioOptions(cardio) {
+  if (!Array.isArray(cardio.options) || !cardio.options.length) return "";
+  return `
+    <p class="loads cardio-options">
+      <b>Machine options:</b> ${cardio.options.map(escapeHtml).join(" / ")}
+    </p>
   `;
 }
 
