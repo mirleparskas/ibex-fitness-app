@@ -1,4 +1,4 @@
-const PLAN_KEY = "glute-recomp-v2";
+const PLAN_KEY = "glute-recomp-v3";
 
 const state = {
   week: Number(localStorage.getItem(`fit.week.${PLAN_KEY}`) || 0),
@@ -85,7 +85,10 @@ async function saveServerProgress() {
 }
 
 function getWeekBlock(weekIndex) {
-  return weekIndex < 4 ? 0 : 1;
+  if (weekIndex < 3) return 0;
+  if (weekIndex === 3) return 1;
+  if (weekIndex < 7) return 2;
+  return 3;
 }
 
 function pick(items, weekIndex) {
@@ -94,23 +97,28 @@ function pick(items, weekIndex) {
 
 function pickDailyCardio(weekIndex, dayIndex) {
   const options = PROGRAM.cardio?.daily || [];
-  return options.length ? options[(weekIndex + dayIndex) % options.length] : null;
+  return options.length ? options[dayIndex % options.length] : null;
 }
 
 function buildWeek(weekIndex) {
   const p = PROGRAM.progressions;
   const a = PROGRAM.accessories;
+  const v = PROGRAM.weekVariations;
+  const thrust = pick(v.thrust, weekIndex);
+  const squat = pick(v.squat, weekIndex);
+  const hinge = pick(v.hinge, weekIndex);
+  const upper = pick(v.upper, weekIndex);
 
   return [
     {
       type: "g",
       tag: "G1",
       title: "Glute Build - Hip Thrust Strength",
-      focus: "Glute priority lifting first, then low-impact cardio",
+      focus: "Glute priority lifting first, with weekly thrust variations and low-impact cardio",
       segments: [
         textSeg("WU", "Warm-up", PROGRAM.warmups.glute),
-        liftSeg("1", "Primary Glute Strength", "Barbell hip thrust", p.hipThrust[weekIndex], a.upperPull, "Add load or reps only when every rep locks out cleanly with a hard one-second squeeze."),
-        listSeg("2", "Glute Builder", ["3x8-10 Bulgarian split squat/side", "3x10-12 Romanian deadlift", "2x15-20 seated hip abduction"]),
+        liftSeg("1", "Primary Glute Strength", thrust.movement, p.hipThrust[weekIndex], a.upperPull, "Add load or reps only when every rep locks out cleanly with a hard one-second squeeze."),
+        listSeg("2", "Glute Builder", thrust.builder),
         listSeg("3", "Core", a.coreA),
         cardioSeg("4", "Cardio After Lifting", pickDailyCardio(weekIndex, 0))
       ]
@@ -118,24 +126,24 @@ function buildWeek(weekIndex) {
     {
       type: "c",
       tag: "F1",
-      title: "Full Body - Upper Push/Pull + HIIT",
-      focus: "Build shoulders, back, chest, and conditioning without stealing glute recovery",
+      title: "CrossFit Strength - Cleans + Gymnastics",
+      focus: "Clean skill, T2B practice, upper-body balance, and hard conditioning",
       segments: [
-        textSeg("WU", "Warm-up", PROGRAM.warmups.fullBody),
-        liftSeg("1", "Primary Upper Lift", "DB bench press", p.bench[weekIndex], null, "Stop 1-2 reps before form breaks. Strong presses build shape without needing maximal barbell work."),
-        listSeg("2", "Upper / Full-Body Muscle", ["3x10-12 chest-supported row", "3x10-12 DB shoulder press", "3x12 goblet squat or leg press", "2x12-15 lateral raises"]),
-        cardioSeg("3", "HIIT / EMOM", pickDailyCardio(weekIndex, 1))
+        textSeg("WU", "Warm-up", PROGRAM.warmups.crossfit),
+        liftSeg("1", "Clean Progression", "Power clean", p.clean[weekIndex], null, "Technique first: fast elbows, quiet feet, and no missed reps while rebuilding."),
+        listSeg("2", "Gymnastics + Pull", ["4 sets: 5-10 toes-to-bar or hanging knee raises", "3x8-10 strict pull-up, assisted pull-up, or lat pulldown", "3x10-12 chest-supported row"]),
+        cardioSeg("3", "Clean / T2B Conditioning", pickDailyCardio(weekIndex, 1))
       ]
     },
     {
       type: "g",
       tag: "G2",
       title: "Glute Build - Squat + Shape",
-      focus: "Squat/lunge pattern for glutes, quads, and lower-body shape",
+      focus: "Squat or lunge pattern for glutes, quads, and lower-body shape",
       segments: [
         textSeg("WU", "Warm-up", PROGRAM.warmups.glute),
-        liftSeg("1", "Primary Lower Lift", "Back squat or leg press", p.squatPattern[weekIndex], a.upperPush, "Use the option that lets you load legs hard while keeping depth and control."),
-        listSeg("2", "Glute / Quad Hypertrophy", ["3x10-12 hip thrust or glute bridge", "3x10-12 reverse lunges/side", "2x15-20 cable kickbacks/side"]),
+        liftSeg("1", "Primary Lower Lift", squat.movement, p.squatPattern[weekIndex], a.upperPush, "Use the weekly variation that lets you load legs hard while keeping depth and control."),
+        listSeg("2", "Glute / Quad Hypertrophy", squat.builder),
         listSeg("3", "Pump Finish", ["2 rounds, rest 60s between rounds", "15 goblet squats", "15 seated hip abductions"]),
         cardioSeg("4", "Incline / Stair Cardio", pickDailyCardio(weekIndex, 2))
       ]
@@ -143,13 +151,14 @@ function buildWeek(weekIndex) {
     {
       type: "c",
       tag: "F2",
-      title: "Full Body - CrossFit-Style Strength",
-      focus: "Hard conditioning and full-body lifting, no snatches or clean and jerks",
+      title: "Upper Bodybuilding + Push Press",
+      focus: "Shoulders, back, chest, arms, and CrossFit-style pressing stamina",
       segments: [
         textSeg("WU", "Warm-up", PROGRAM.warmups.fullBody),
-        liftSeg("1", "Primary Strength", "Trap-bar deadlift", p.trapBar[weekIndex], null, "This should feel athletic, not like a max-out. Leave one strong rep in reserve."),
-        listSeg("2", "Strength Accessories", ["3x8-10 incline DB press", "3x10-12 lat pulldown", "3x10 step-ups/side"]),
-        cardioSeg("3", "CrossFit-Style Conditioning", pickDailyCardio(weekIndex, 3))
+        liftSeg("1", "Primary Upper Lift", upper.movement, p.bench[weekIndex], null, "Stop 1-2 reps before form breaks. Strong presses build shape without needing maximal barbell work."),
+        liftSeg("2", "Push Press Progression", "Push press", p.pushPress[weekIndex], null, "Drive with the legs, finish tall, and keep reps crisp."),
+        listSeg("3", "Upper Hypertrophy", upper.builder),
+        cardioSeg("4", "Push Press EMOM", pickDailyCardio(weekIndex, 3))
       ]
     },
     {
@@ -159,8 +168,8 @@ function buildWeek(weekIndex) {
       focus: "Hamstrings, glutes, back line, and controlled low-impact cardio",
       segments: [
         textSeg("WU", "Warm-up", PROGRAM.warmups.glute),
-        liftSeg("1", "Primary Hinge", "Romanian deadlift", p.rdl[weekIndex], a.overhead, "Own the lowering phase and feel hamstrings stretch. Do not chase load at the expense of position."),
-        listSeg("2", "Glute / Hamstring Volume", ["3x10-12 hip thrust machine or Smith hip thrust", "3x12 cable pull-throughs", "2x12-15 back extensions with glute squeeze", "2x12-15 hamstring curls"]),
+        liftSeg("1", "Primary Hinge", hinge.movement, p.rdl[weekIndex], a.overhead, "Own the lowering phase and feel hamstrings stretch. Do not chase load at the expense of position."),
+        listSeg("2", "Glute / Hamstring Volume", hinge.builder),
         listSeg("3", "Core", a.coreB),
         cardioSeg("4", "Machine Cardio", pickDailyCardio(weekIndex, 4))
       ]
@@ -168,12 +177,12 @@ function buildWeek(weekIndex) {
     {
       type: "c",
       tag: "F3",
-      title: "Upper / Full Body Pump + HIIT",
-      focus: "Add muscle to shoulders, back, arms, and trunk with a glute finisher",
+      title: "Mixed Modal Conditioning + Pump",
+      focus: "Different CrossFit-style conditioning, arms/shoulders, trunk, and a small glute finisher",
       segments: [
         textSeg("WU", "Warm-up", PROGRAM.warmups.fullBody),
-        liftSeg("1", "Primary Press", "Push press or DB shoulder press", p.pushPress[weekIndex], null, "Use a crisp drive and stop before reps turn sloppy."),
-        listSeg("2", "Pump Work", ["3x10-12 cable row", "3x10-12 DB bench press or push-ups", "3x12-15 lateral raises", "3x10-12 hammer curls"]),
+        listSeg("1", "Bodybuilding Pump", ["3x12 cable row", "3x12 DB bench press or push-ups", "3x15 lateral raises", "3x12 hammer curls"]),
+        listSeg("2", "Trunk Skill", ["4 sets: 6-12 toes-to-bar, knee raises, or V-ups", "3x30-45s farmer carry"]),
         listSeg("3", "Glute Finisher", ["2 rounds", "15 cable kickbacks/side", "20 banded lateral walks/side"]),
         cardioSeg("4", "HIIT / Mixed Modal", pickDailyCardio(weekIndex, 5))
       ]
