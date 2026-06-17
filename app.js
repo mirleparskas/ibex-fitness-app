@@ -1,4 +1,4 @@
-const PLAN_KEY = "restart-muscle";
+const PLAN_KEY = "glute-recomp-v2";
 
 const state = {
   week: Number(localStorage.getItem(`fit.week.${PLAN_KEY}`) || 0),
@@ -105,79 +105,77 @@ function buildWeek(weekIndex) {
     {
       type: "g",
       tag: "G1",
-      title: "Glute Focus - Thrust + Pull",
-      focus: "30-45 min cardio, then 30-40 min glute and upper pull lifting",
+      title: "Glute Build - Hip Thrust Strength",
+      focus: "Glute priority lifting first, then low-impact cardio",
       segments: [
-        cardioSeg("1", "Cardio / Conditioning", pickDailyCardio(weekIndex, 0)),
         textSeg("WU", "Warm-up", PROGRAM.warmups.glute),
-        liftSeg("2", "Primary Lift", "Barbell hip thrust", p.hipThrust[weekIndex], a.upperPull, "Full lockout, ribs down, one-second squeeze every rep."),
-        listSeg("3", "Glute Hypertrophy", ["3x10 Romanian deadlift", "3x12/12 walking lunges", "2x15 cable or banded kickbacks/side"]),
-        listSeg("4", "Core", a.coreA)
+        liftSeg("1", "Primary Glute Strength", "Barbell hip thrust", p.hipThrust[weekIndex], a.upperPull, "Add load or reps only when every rep locks out cleanly with a hard one-second squeeze."),
+        listSeg("2", "Glute Builder", ["3x8-10 Bulgarian split squat/side", "3x10-12 Romanian deadlift", "2x15-20 seated hip abduction"]),
+        listSeg("3", "Core", a.coreA),
+        cardioSeg("4", "Cardio After Lifting", pickDailyCardio(weekIndex, 0))
       ]
     },
     {
       type: "c",
       tag: "F1",
-      title: "Full Body - Push / Pull / Legs",
-      focus: "30-45 min cardio, then 30-40 min balanced muscle-building work",
+      title: "Full Body - Upper Push/Pull + HIIT",
+      focus: "Build shoulders, back, chest, and conditioning without stealing glute recovery",
       segments: [
-        cardioSeg("1", "Cardio / HIIT", pickDailyCardio(weekIndex, 1)),
         textSeg("WU", "Warm-up", PROGRAM.warmups.fullBody),
-        liftSeg("2", "Primary Lift", "DB bench press", p.bench[weekIndex], null, "Use a load that leaves 1-2 good reps in reserve."),
-        listSeg("3", "Full-Body Superset", ["3x10 chest-supported row", "3x10 goblet squats", "3x12 DB shoulder press"]),
-        listSeg("4", "Core / Carry", ["3x30-45s farmer carry", "3x10 dead bugs/side"])
+        liftSeg("1", "Primary Upper Lift", "DB bench press", p.bench[weekIndex], null, "Stop 1-2 reps before form breaks. Strong presses build shape without needing maximal barbell work."),
+        listSeg("2", "Upper / Full-Body Muscle", ["3x10-12 chest-supported row", "3x10-12 DB shoulder press", "3x12 goblet squat or leg press", "2x12-15 lateral raises"]),
+        cardioSeg("3", "HIIT / EMOM", pickDailyCardio(weekIndex, 1))
       ]
     },
     {
       type: "g",
       tag: "G2",
-      title: "Glute Focus - Squat + Shape",
-      focus: "30-45 min cardio, then 30-40 min squat and glute hypertrophy",
+      title: "Glute Build - Squat + Shape",
+      focus: "Squat/lunge pattern for glutes, quads, and lower-body shape",
       segments: [
-        cardioSeg("1", "Cardio / Conditioning", pickDailyCardio(weekIndex, 2)),
         textSeg("WU", "Warm-up", PROGRAM.warmups.glute),
-        liftSeg("2", "Primary Lift", "Back squat", p.backSquat[weekIndex], a.upperPush, "Below parallel if available, brace before every rep, and keep the tempo controlled."),
-        listSeg("3", "Glute / Quad Work", ["3x10 hip thrusts", "3x12/12 reverse lunges", "2x15 seated hip abduction"]),
-        listSeg("4", "Pump Finish", a.pump)
+        liftSeg("1", "Primary Lower Lift", "Back squat or leg press", p.squatPattern[weekIndex], a.upperPush, "Use the option that lets you load legs hard while keeping depth and control."),
+        listSeg("2", "Glute / Quad Hypertrophy", ["3x10-12 hip thrust or glute bridge", "3x10-12 reverse lunges/side", "2x15-20 cable kickbacks/side"]),
+        listSeg("3", "Pump Finish", ["2 rounds, rest 60s between rounds", "15 goblet squats", "15 seated hip abductions"]),
+        cardioSeg("4", "Incline / Stair Cardio", pickDailyCardio(weekIndex, 2))
       ]
     },
     {
       type: "c",
       tag: "F2",
-      title: "Full Body - Hinge / Upper",
-      focus: "30-45 min cardio, then 30-40 min full-body strength without Olympic lifts",
+      title: "Full Body - CrossFit-Style Strength",
+      focus: "Hard conditioning and full-body lifting, no snatches or clean and jerks",
       segments: [
-        cardioSeg("1", "Cardio / EMOM", pickDailyCardio(weekIndex, 3)),
         textSeg("WU", "Warm-up", PROGRAM.warmups.fullBody),
-        liftSeg("2", "Primary Lift", "Trap-bar deadlift", p.trapBar[weekIndex], null, "Push the floor away and stop each set before your back position changes."),
-        listSeg("3", "Full-Body Accessories", ["3x10 incline DB press", "3x10 lat pulldown", "3x12 step-ups/side"]),
-        listSeg("4", "Core", ["3x12 Pallof presses/side", "3x30s side plank/side"])
+        liftSeg("1", "Primary Strength", "Trap-bar deadlift", p.trapBar[weekIndex], null, "This should feel athletic, not like a max-out. Leave one strong rep in reserve."),
+        listSeg("2", "Strength Accessories", ["3x8-10 incline DB press", "3x10-12 lat pulldown", "3x10 step-ups/side"]),
+        cardioSeg("3", "CrossFit-Style Conditioning", pickDailyCardio(weekIndex, 3))
       ]
     },
     {
       type: "g",
       tag: "G3",
-      title: "Glute Focus - Posterior Chain",
-      focus: "30-45 min cardio, then 30-40 min hamstrings, glutes, and back",
+      title: "Glute Build - Posterior Chain",
+      focus: "Hamstrings, glutes, back line, and controlled low-impact cardio",
       segments: [
-        cardioSeg("1", "Cardio / Conditioning", pickDailyCardio(weekIndex, 4)),
         textSeg("WU", "Warm-up", PROGRAM.warmups.glute),
-        liftSeg("2", "Primary Lift", "Romanian deadlift", p.rdl[weekIndex], a.overhead, "Hips back, bar close, feel the hamstrings load, and keep tension the whole set."),
-        listSeg("3", "Glute / Hamstring Work", ["3x12 cable pull-throughs", "3x12 knee-high step-ups/side", "2x15 back extensions with glute squeeze"]),
-        listSeg("4", "Core", a.coreB)
+        liftSeg("1", "Primary Hinge", "Romanian deadlift", p.rdl[weekIndex], a.overhead, "Own the lowering phase and feel hamstrings stretch. Do not chase load at the expense of position."),
+        listSeg("2", "Glute / Hamstring Volume", ["3x10-12 hip thrust machine or Smith hip thrust", "3x12 cable pull-throughs", "2x12-15 back extensions with glute squeeze", "2x12-15 hamstring curls"]),
+        listSeg("3", "Core", a.coreB),
+        cardioSeg("4", "Machine Cardio", pickDailyCardio(weekIndex, 4))
       ]
     },
     {
       type: "c",
       tag: "F3",
-      title: "Full Body - Pump + Athletic",
-      focus: "30-45 min cardio, then 30-40 min full-body pump work",
+      title: "Upper / Full Body Pump + HIIT",
+      focus: "Add muscle to shoulders, back, arms, and trunk with a glute finisher",
       segments: [
-        cardioSeg("1", "Cardio / Intervals", pickDailyCardio(weekIndex, 5)),
         textSeg("WU", "Warm-up", PROGRAM.warmups.fullBody),
-        liftSeg("2", "Primary Lift", "Push press", p.pushPress[weekIndex], null, "Drive with the legs, finish tall, and keep reps crisp."),
-        listSeg("3", "Full-Body Circuit", ["3 rounds: 10 leg press", "10 cable row", "10 DB RDLs", "12 push-ups or DB bench press"]),
-        listSeg("4", "Tone Finish", ["2x15 lateral raises", "2x15 cable kickbacks/side", "2x12 hammer curls"])
+        liftSeg("1", "Primary Press", "Push press or DB shoulder press", p.pushPress[weekIndex], null, "Use a crisp drive and stop before reps turn sloppy."),
+        listSeg("2", "Pump Work", ["3x10-12 cable row", "3x10-12 DB bench press or push-ups", "3x12-15 lateral raises", "3x10-12 hammer curls"]),
+        listSeg("3", "Glute Finisher", ["2 rounds", "15 cable kickbacks/side", "20 banded lateral walks/side"]),
+        cardioSeg("4", "HIIT / Mixed Modal", pickDailyCardio(weekIndex, 5))
       ]
     },
     {

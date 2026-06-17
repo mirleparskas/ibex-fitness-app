@@ -1,4 +1,4 @@
-# Muscle + Conditioning Training App
+# Glute Recomp Training App
 
 Open `index.html` directly in a browser, or run a simple local server from this folder.
 
@@ -17,15 +17,16 @@ Use the Reset Progress button to clear saved local data.
 
 ## Plan Structure
 
-- Day 1: Glute focus, hip thrust and upper pull
-- Day 2: Full body, push/pull/legs
-- Day 3: Glute focus, squat and shape
-- Day 4: Full body, hinge and upper
-- Day 5: Glute focus, posterior chain
-- Day 6: Full body, pump and athletic work
+- Day 1: Glute build, hip thrust strength
+- Day 2: Full body, upper push/pull and HIIT
+- Day 3: Glute build, squat and shape
+- Day 4: Full body, CrossFit-style strength and conditioning
+- Day 5: Glute build, posterior chain
+- Day 6: Upper/full-body pump and HIIT
 - Day 7: Rest or active recovery
 
 Every day includes a 30-45 minute cardio target, with running, StairMaster,
 HIIT, EMOM, incline walk, machine mix, interval, and recovery options rotated
-through the week. Lifting is designed to take about 30-40 minutes after cardio.
-Weeks 1-4 restart consistency and Weeks 5-8 build load, reps, and density.
+through the week. Glute and lifting work comes first so progressive overload
+drives the body-composition changes. Weeks 1-4 rebuild consistency and Weeks
+5-8 build load, reps, and density.
