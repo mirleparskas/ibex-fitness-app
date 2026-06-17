@@ -1,4 +1,4 @@
-const PLAN_KEY = "glute-recomp-v3";
+const PLAN_KEY = "glute-recomp-v4";
 
 const state = {
   week: Number(localStorage.getItem(`fit.week.${PLAN_KEY}`) || 0),
@@ -108,6 +108,8 @@ function buildWeek(weekIndex) {
   const squat = pick(v.squat, weekIndex);
   const hinge = pick(v.hinge, weekIndex);
   const upper = pick(v.upper, weekIndex);
+  const pump = pick(v.pump, weekIndex);
+  const trunk = pick(v.trunk, weekIndex);
 
   return [
     {
@@ -142,9 +144,9 @@ function buildWeek(weekIndex) {
       focus: "Squat or lunge pattern for glutes, quads, and lower-body shape",
       segments: [
         textSeg("WU", "Warm-up", PROGRAM.warmups.glute),
-        liftSeg("1", "Primary Lower Lift", squat.movement, p.squatPattern[weekIndex], a.upperPush, "Use the weekly variation that lets you load legs hard while keeping depth and control."),
+        liftSeg("1", "Primary Lower Lift", squat.movement, p.squatPattern[weekIndex], ["Superset with the main lift", "3x10-12 face pulls", "3x12 standing calf raises"], "Use the weekly variation that lets you load legs hard while keeping depth and control."),
         listSeg("2", "Glute / Quad Hypertrophy", squat.builder),
-        listSeg("3", "Pump Finish", ["2 rounds, rest 60s between rounds", "15 goblet squats", "15 seated hip abductions"]),
+        listSeg("3", "Pump Finish", ["2 rounds, rest 60s between rounds", "20 banded lateral walks/side", "15 seated hip abductions"]),
         cardioSeg("4", "Incline / Stair Cardio", pickDailyCardio(weekIndex, 2))
       ]
     },
@@ -181,8 +183,8 @@ function buildWeek(weekIndex) {
       focus: "Different CrossFit-style conditioning, arms/shoulders, trunk, and a small glute finisher",
       segments: [
         textSeg("WU", "Warm-up", PROGRAM.warmups.fullBody),
-        listSeg("1", "Bodybuilding Pump", ["3x12 cable row", "3x12 DB bench press or push-ups", "3x15 lateral raises", "3x12 hammer curls"]),
-        listSeg("2", "Trunk Skill", ["4 sets: 6-12 toes-to-bar, knee raises, or V-ups", "3x30-45s farmer carry"]),
+        listSeg("1", "Bodybuilding Pump", pump),
+        listSeg("2", "Trunk Skill", trunk),
         listSeg("3", "Glute Finisher", ["2 rounds", "15 cable kickbacks/side", "20 banded lateral walks/side"]),
         cardioSeg("4", "HIIT / Mixed Modal", pickDailyCardio(weekIndex, 5))
       ]
