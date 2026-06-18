@@ -1,4 +1,4 @@
-# Glute Recomp Training App
+# Cardio-First Glute Recomp App
 
 Open `index.html` directly in a browser, or run a simple local server from this folder.
 
@@ -7,10 +7,9 @@ Open `index.html` directly in a browser, or run a simple local server from this 
 Most changes happen in `workouts.js`.
 
 - Strength progressions: edit `PROGRAM.progressions`.
-- Daily cardio options: edit `PROGRAM.cardio.daily`.
-- Weekly exercise variations: edit `PROGRAM.weekVariations`.
-- Warm-ups, accessories, and lifting day structure: edit `PROGRAM.warmups`, `PROGRAM.accessories`, and `app.js`.
-- Week tabs and layout behavior: edit `app.js`.
+- Cardio formats: edit `PROGRAM.cardio`.
+- Weekly rules, warm-ups, and block notes: edit `PROGRAM.rules`, `PROGRAM.warmups`, and `PROGRAM.blocks`.
+- Day structure and layout behavior: edit `app.js`.
 - Colors, spacing, and responsive design: edit `app.css`.
 
 The app saves completed workouts, cardio scores, lifting logs, and notes in browser `localStorage`.
@@ -18,16 +17,17 @@ Use the Reset Progress button to clear saved local data.
 
 ## Plan Structure
 
-- Day 1: Glute build, thrust strength and Zone 2
-- Day 2: CrossFit strength, power cleans, T2B, and conditioning
-- Day 3: Glute build, squat/lunge pattern and StairMaster/incline
-- Day 4: Upper bodybuilding, push press, and EMOM
-- Day 5: Glute build, hinge/posterior chain and machine intervals
-- Day 6: Mixed-modal conditioning, trunk skill, pump, and glute finisher
-- Day 7: Rest or active recovery
+- Monday: EMOM + lower strength + glutes
+- Tuesday: Zone 2 + upper push + shoulders/triceps
+- Wednesday: Chipper + Olympic lift technique + posterior accessories
+- Thursday: Zone 2 + upper pull + back/biceps
+- Friday: AMRAP + posterior chain + glutes/hams
+- Saturday: Zone 2 + full-body pump
+- Sunday: Recovery cardio only
 
-Every week keeps the same structure, but the exact lift variation changes so
-movement patterns progress without feeling like the same workout on repeat.
-Weeks 1-3 rebuild volume and technique. Week 4 is a pivot/deload-style change
-up. Weeks 5-7 push load, density, and bodybuilding volume. Week 8 retests clean
-reps, glute strength, and conditioning.
+Every day starts with cardio. On Zone 2 days, lifting can be heavier because the
+cardio is controlled. On EMOM, AMRAP, and chipper days, lifting stays moderate:
+good form only, no testing maxes, and no grinding reps.
+
+Weeks 1-3 rebuild volume and technique. Week 4 changes the stimulus and lowers
+load. Weeks 5-7 build load, reps, or density. Week 8 retests repeatable effort.

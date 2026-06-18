@@ -1,4 +1,4 @@
-const PLAN_KEY = "glute-recomp-v4";
+const PLAN_KEY = "cardio-first-glute-recomp-v1";
 
 const state = {
   week: Number(localStorage.getItem(`fit.week.${PLAN_KEY}`) || 0),
@@ -95,108 +95,104 @@ function pick(items, weekIndex) {
   return items[weekIndex] || items[weekIndex % items.length];
 }
 
-function pickDailyCardio(weekIndex, dayIndex) {
-  const options = PROGRAM.cardio?.daily || [];
-  return options.length ? options[dayIndex % options.length] : null;
-}
-
 function buildWeek(weekIndex) {
   const p = PROGRAM.progressions;
-  const a = PROGRAM.accessories;
-  const v = PROGRAM.weekVariations;
-  const thrust = pick(v.thrust, weekIndex);
-  const squat = pick(v.squat, weekIndex);
-  const hinge = pick(v.hinge, weekIndex);
-  const upper = pick(v.upper, weekIndex);
-  const pump = pick(v.pump, weekIndex);
-  const trunk = pick(v.trunk, weekIndex);
+  const c = PROGRAM.cardio;
+  const weeklyNote = PROGRAM.weeklyNotes[weekIndex];
 
   return [
     {
       type: "g",
-      tag: "G1",
-      title: "Glute Build - Hip Thrust Strength",
-      focus: "Glute priority lifting first, with weekly thrust variations and low-impact cardio",
+      tag: "M",
+      title: "EMOM + Lower Strength + Glutes",
+      focus: "Cardio first, then moderate lower strength and glute volume",
       segments: [
-        textSeg("WU", "Warm-up", PROGRAM.warmups.glute),
-        liftSeg("1", "Primary Glute Strength", thrust.movement, p.hipThrust[weekIndex], a.upperPull, "Add load or reps only when every rep locks out cleanly with a hard one-second squeeze."),
-        listSeg("2", "Glute Builder", thrust.builder),
-        listSeg("3", "Core", a.coreA),
-        cardioSeg("4", "Cardio After Lifting", pickDailyCardio(weekIndex, 0))
+        cardioSeg("1", "Cardio First", c.mondayEmom),
+        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.lower),
+        liftSeg("2", "Main Lift", "Front squat", p.frontSquat[weekIndex], null, "Keep this around 7/10 effort after the EMOM. No maxes or grinding."),
+        listSeg("3", "Then", ["3x8 Bulgarian split squat/leg"]),
+        listSeg("4", "Glute Accessories", ["4x8-10 hip thrust", "3x10-12 hamstring curl", "3x12-15 cable kickbacks/leg", "2x20 abductors"]),
+        textSeg("NOTE", "Week Note", weeklyNote)
       ]
     },
     {
       type: "c",
-      tag: "F1",
-      title: "CrossFit Strength - Cleans + Gymnastics",
-      focus: "Clean skill, T2B practice, upper-body balance, and hard conditioning",
+      tag: "T",
+      title: "Zone 2 + Upper Push",
+      focus: "Steady cardio first, then heavier upper push, shoulders, and triceps",
       segments: [
-        textSeg("WU", "Warm-up", PROGRAM.warmups.crossfit),
-        liftSeg("1", "Clean Progression", "Power clean", p.clean[weekIndex], null, "Technique first: fast elbows, quiet feet, and no missed reps while rebuilding."),
-        listSeg("2", "Gymnastics + Pull", ["4 sets: 5-10 toes-to-bar or hanging knee raises", "3x8-10 strict pull-up, assisted pull-up, or lat pulldown", "3x10-12 chest-supported row"]),
-        cardioSeg("3", "Clean / T2B Conditioning", pickDailyCardio(weekIndex, 1))
+        cardioSeg("1", "Cardio First", c.tuesdayZone2),
+        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.upper),
+        liftSeg("2", "Main Lift", "Push press", p.pushPress[weekIndex], null, "Zone 2 should not drain this lift. Keep reps crisp and powerful."),
+        listSeg("3", "Then", ["3x8-10 DB bench press"]),
+        listSeg("4", "Shoulders / Chest / Triceps", ["3x8-10 seated DB shoulder press", "4x12-20 lateral raises", "3x10-15 cable fly or push-ups", "3x12-15 triceps rope pressdown", "2x12-15 overhead triceps extension"]),
+        textSeg("NOTE", "Week Note", weeklyNote)
+      ]
+    },
+    {
+      type: "c",
+      tag: "W",
+      title: "Chipper + Olympic Lift Technique + Posterior",
+      focus: "Long chipper first, then light technical cleans and posterior accessories",
+      segments: [
+        cardioSeg("1", "Cardio First", c.wednesdayChipper),
+        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.olympic),
+        liftSeg("2", "Main Lift / Skill", "Power clean technique", p.powerClean[weekIndex], null, "Because the chipper is first, keep Olympic lifting light to moderate and technical."),
+        listSeg("3", "Then", ["3x3 clean pull"]),
+        listSeg("4", "Posterior / Back / Core", ["3x12-15 back extensions", "3x10-12 cable row", "3x15-20 rear delt fly", "3x45-60s plank"]),
+        textSeg("NOTE", "Week Note", weeklyNote)
+      ]
+    },
+    {
+      type: "c",
+      tag: "Th",
+      title: "Zone 2 + Upper Pull",
+      focus: "Steady cardio first, then heavier back and biceps",
+      segments: [
+        cardioSeg("1", "Cardio First", c.thursdayZone2),
+        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.upper),
+        liftSeg("2", "Main Lift", "Pull-ups, assisted pull-ups, or lat pulldown", p.pull[weekIndex], null, "Use the option that gives full range and strong control."),
+        listSeg("3", "Back / Biceps", ["3x10 single-arm DB row/side", "3x10-12 seated cable row", "3x12-15 straight-arm pulldown", "3x15-20 face pulls", "3x10-12 DB curls", "2x12-15 hammer curls"]),
+        textSeg("NOTE", "Week Note", weeklyNote)
       ]
     },
     {
       type: "g",
-      tag: "G2",
-      title: "Glute Build - Squat + Shape",
-      focus: "Squat or lunge pattern for glutes, quads, and lower-body shape",
+      tag: "F",
+      title: "AMRAP + Posterior Chain + Glutes",
+      focus: "Quality AMRAP first, then controlled posterior chain and glute work",
       segments: [
-        textSeg("WU", "Warm-up", PROGRAM.warmups.glute),
-        liftSeg("1", "Primary Lower Lift", squat.movement, p.squatPattern[weekIndex], ["Superset with the main lift", "3x10-12 face pulls", "3x12 standing calf raises"], "Use the weekly variation that lets you load legs hard while keeping depth and control."),
-        listSeg("2", "Glute / Quad Hypertrophy", squat.builder),
-        listSeg("3", "Pump Finish", ["2 rounds, rest 60s between rounds", "20 banded lateral walks/side", "15 seated hip abductions"]),
-        cardioSeg("4", "Incline / Stair Cardio", pickDailyCardio(weekIndex, 2))
+        cardioSeg("1", "Cardio First", c.fridayAmrap),
+        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.lower),
+        liftSeg("2", "Main Lift", "Romanian deadlift", p.rdl[weekIndex], null, "Controlled reps only after the AMRAP. No sloppy hinge reps."),
+        listSeg("3", "Then", ["4x8-10 hip thrust"]),
+        listSeg("4", "Glutes / Hamstrings", ["3x10-12 hamstring curl", "3x12-15 cable pull-through", "3x15 glute med kickbacks/side", "3x20 abductors", "3x12-15 standing calf raises"]),
+        textSeg("NOTE", "Week Note", weeklyNote)
       ]
     },
     {
       type: "c",
-      tag: "F2",
-      title: "Upper Bodybuilding + Push Press",
-      focus: "Shoulders, back, chest, arms, and CrossFit-style pressing stamina",
+      tag: "Sa",
+      title: "Zone 2 + Full-Body Pump",
+      focus: "Machine cardio first, then full-body hypertrophy pump",
       segments: [
-        textSeg("WU", "Warm-up", PROGRAM.warmups.fullBody),
-        liftSeg("1", "Primary Upper Lift", upper.movement, p.bench[weekIndex], null, "Stop 1-2 reps before form breaks. Strong presses build shape without needing maximal barbell work."),
-        liftSeg("2", "Push Press Progression", "Push press", p.pushPress[weekIndex], null, "Drive with the legs, finish tall, and keep reps crisp."),
-        listSeg("3", "Upper Hypertrophy", upper.builder),
-        cardioSeg("4", "Push Press EMOM", pickDailyCardio(weekIndex, 3))
-      ]
-    },
-    {
-      type: "g",
-      tag: "G3",
-      title: "Glute Build - Posterior Chain",
-      focus: "Hamstrings, glutes, back line, and controlled low-impact cardio",
-      segments: [
-        textSeg("WU", "Warm-up", PROGRAM.warmups.glute),
-        liftSeg("1", "Primary Hinge", hinge.movement, p.rdl[weekIndex], a.overhead, "Own the lowering phase and feel hamstrings stretch. Do not chase load at the expense of position."),
-        listSeg("2", "Glute / Hamstring Volume", hinge.builder),
-        listSeg("3", "Core", a.coreB),
-        cardioSeg("4", "Machine Cardio", pickDailyCardio(weekIndex, 4))
-      ]
-    },
-    {
-      type: "c",
-      tag: "F3",
-      title: "Mixed Modal Conditioning + Pump",
-      focus: "Different CrossFit-style conditioning, arms/shoulders, trunk, and a small glute finisher",
-      segments: [
-        textSeg("WU", "Warm-up", PROGRAM.warmups.fullBody),
-        listSeg("1", "Bodybuilding Pump", pump),
-        listSeg("2", "Trunk Skill", trunk),
-        listSeg("3", "Glute Finisher", ["2 rounds", "15 cable kickbacks/side", "20 banded lateral walks/side"]),
-        cardioSeg("4", "HIIT / Mixed Modal", pickDailyCardio(weekIndex, 5))
+        cardioSeg("1", "Cardio First", c.saturdayZone2),
+        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.fullBody),
+        liftSeg("2", "Main Lift", "Incline DB press or bench press", p.inclinePress[weekIndex], null, "This is a pump day, not a max day."),
+        listSeg("3", "Then", ["3x10 goblet squat or tempo squat"]),
+        listSeg("4", "Full-Body Pump", ["3x12 walking lunges/leg", "3x10-12 lat pulldown", "4x15-20 lateral raises", "3x15 cable kickbacks/leg", "3x12 biceps curls", "3x12 triceps pressdowns"]),
+        textSeg("NOTE", "Week Note", weeklyNote)
       ]
     },
     {
       type: "r",
-      tag: "R",
-      title: "Rest / Active Recovery",
-      focus: "30-45 min easy cardio - mobility - recovery",
+      tag: "Su",
+      title: "Recovery Cardio Only",
+      focus: "Easy cardio, optional mobility and core, no lift",
       segments: [
-        cardioSeg("1", "Daily Cardio", pickDailyCardio(weekIndex, 6)),
-        textSeg("2", "Recovery", "Add 10-15 min hips, ankles, and T-spine mobility. Eat enough protein and sleep.")
+        cardioSeg("1", "Cardio", c.sundayRecovery),
+        textSeg("2", "Optional Mobility / Core", "10-15 min: couch stretch 1-2 min/side, pigeon stretch 1-2 min/side, thoracic rotations 10/side, dead bugs 3x10/side, side plank 2x30s/side."),
+        textSeg("NOTE", "Week Note", weeklyNote)
       ]
     }
   ];
@@ -558,7 +554,7 @@ function renderSegment(segment, key, dayIndex, segIndex) {
           ${cardio.moves.map((move) => `<p class="plain movement-name">${escapeHtml(move)}</p>`).join("")}
         </div>
         ${renderCardioOptions(cardio)}
-        <span class="cap">Daily target: 30-45 minutes</span>
+        <span class="cap">${escapeHtml(cardio.target || "Daily target: 30-45 minutes")}</span>
         ${renderCardioTracking(key)}
         <div class="goal"><b>Goal</b><span>${escapeHtml(cardio.goal)}</span></div>
       </div>
@@ -846,7 +842,7 @@ function cleanDescriptor(rawMovement, base) {
 function categoryForMovement(movement) {
   const text = movement.toLowerCase();
   if (/snatch|clean|jerk|overhead squat/.test(text)) return "olympic";
-  if (/hip thrust|glute|bridge|kickback|abduction|frog|reverse hyper/.test(text)) return "glute";
+  if (/hip thrust|glute|bridge|kickback|abduction|abductor|frog|reverse hyper/.test(text)) return "glute";
   if (/squat|lunge|step-up|wall ball|leg press/.test(text)) return "squat";
   if (/deadlift|rdl|hinge|pull-through|swing|hamstring|good morning|extension/.test(text)) return "hinge";
   if (/press|push-up|bench|dip|hspu|thruster|raise/.test(text)) return "press";

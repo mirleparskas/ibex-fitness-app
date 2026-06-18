@@ -1,161 +1,104 @@
 const PROGRAM = {
-  name: "Glute Recomp Build",
+  name: "Cardio-First Glute Recomp",
   blocks: [
     {
-      name: "Block 1 - Rebuild Base",
+      name: "Block 1 - Restart",
       weeks: "Weeks 1-3",
-      summary: "Rebuild volume and skill with moderate loads, different daily movement patterns, and repeatable conditioning."
+      summary: "Build consistency with cardio first, moderate lower-body loading after hard conditioning, and stronger upper days after Zone 2."
     },
     {
-      name: "Week 4 - Pivot",
+      name: "Week 4 - Change-Up",
       weeks: "Week 4",
-      summary: "Change the stimulus, lower joint stress, keep intensity controlled, and use benchmarks instead of grinding."
+      summary: "Change the conditioning formats, pull load back slightly, and keep every lift clean with no grinding."
     },
     {
       name: "Block 2 - Build",
       weeks: "Weeks 5-7",
-      summary: "Push heavier glute work, stronger Olympic-lift skill, harder gymnastics, and more deliberate bodybuilding volume."
+      summary: "Progress load, reps, or density while keeping the same weekly rhythm and protecting recovery."
     },
     {
-      name: "Week 8 - Test + Reset",
+      name: "Week 8 - Retest",
       weeks: "Week 8",
-      summary: "Retest clean reps, glute strength, conditioning, and weekly consistency without turning every lift into a max."
+      summary: "Retest repeatable effort: cleaner rounds, better loads, stronger accessories, and no max-out lifting after hard cardio."
     }
   ],
+  rules: {
+    hardFirst: "On EMOM, chipper, and AMRAP days, lift moderate: good form only, no testing maxes, no grinding reps.",
+    zone2First: "On Zone 2 days, lift more normally because the cardio should stay steady and controlled."
+  },
   warmups: {
-    glute: "5 min easy bike or incline walk. Then 2 rounds: 12 banded glute bridges, 10 bodyweight RDLs, 10 Cossack squats, 12 lateral band walks/side.",
-    fullBody: "5 min easy machine. Then 2 rounds: 8 inchworms, 10 air squats, 10 ring rows, 10 glute bridges, 8 push-ups or incline push-ups.",
-    crossfit: "3 min row or bike build. Then 2 rounds: 5 inchworms, 10 PVC pass-throughs, 10 air squats, 10 ring rows, 5 wall-walk holds."
+    lower: "5 min easy machine. Then 2 rounds: 10 glute bridges, 10 air squats, 8 Cossack squats/side, 10 banded lateral walks/side.",
+    upper: "5 min easy machine. Then 2 rounds: 10 band pull-aparts, 8 push-ups or incline push-ups, 10 ring rows, 8 scap pull-ups.",
+    olympic: "3 min easy row. Then 2 rounds: 5 inchworms, 10 PVC pass-throughs, 8 empty-bar RDLs, 5 tall cleans, 5 front squats.",
+    recovery: "Start easy for 5 minutes, then stay conversational. Mobility is optional after cardio."
   },
   progressions: {
-    hipThrust: ["3x10 @ RPE 6-7", "4x10 @ RPE 7", "4x8 @ RPE 7-8", "3x10 easy deload", "4x8 @ RPE 8", "5x6 @ RPE 8", "4x8 + 1 backoff set", "Build to smooth 6RM"],
-    squatPattern: ["3x10 @ RPE 6-7", "4x10 @ RPE 7", "4x8 @ RPE 7-8", "3x10 easy deload", "4x8 @ RPE 8", "5x6 @ RPE 8", "4x8 + 1 backoff set", "Build to smooth 8RM"],
-    backSquat: ["3x8 @ RPE 6-7", "4x8 @ RPE 7", "4x6 @ RPE 7-8", "3x8 easy deload", "4x6 @ RPE 8", "5x5 @ RPE 8", "4x6 + 1 backoff set", "Build to smooth 5RM"],
-    rdl: ["3x10 @ RPE 6-7", "4x10 @ RPE 7", "4x8 @ RPE 7-8", "3x10 easy deload", "4x8 @ RPE 8", "4x6 @ RPE 8", "4x8 + 1 backoff set", "Build to smooth 6RM"],
-    bench: ["3x10 @ RPE 6-7", "4x10 @ RPE 7", "4x8 @ RPE 7-8", "3x10 easy deload", "4x8 @ RPE 8", "5x6 @ RPE 8", "4x8 + 1 backoff set", "Build to smooth 6RM"],
-    trapBar: ["3x8 @ RPE 6-7", "4x8 @ RPE 7", "4x6 @ RPE 7-8", "3x8 easy deload", "4x6 @ RPE 8", "5x5 @ RPE 8", "4x6 + 1 backoff set", "Build to smooth 5RM"],
-    clean: ["EMOM 8: 2 hang power cleans @ easy technique load", "E2MOM x 6: 2 power cleans @ RPE 7", "Every 2:00 x 7: 1 clean pull + 1 power clean @ RPE 7-8", "EMOM 10: 1 tall clean + 1 hang power clean, light and fast", "E2MOM x 7: 2 power cleans @ RPE 8", "Every 2:00 x 8: 1 clean pull + 1 power clean, heavier than Week 3", "E2MOM x 8: 1 power clean + 1 front squat @ RPE 8", "Build to a crisp heavy triple power clean"],
-    pushPress: ["3x10 @ RPE 6-7", "4x8 @ RPE 7", "4x8 @ RPE 7-8", "3x10 easy deload", "4x6 @ RPE 8", "5x5 @ RPE 8", "4x6 + 1 backoff set", "Build to smooth 5RM"]
+    frontSquat: ["4x4 @ RPE 6-7", "4x5 @ RPE 7", "4x6 @ RPE 7", "3x5 lighter change-up", "5x4 @ RPE 7-8", "4x5 heavier than Week 2", "4x6 heavier than Week 3", "Build to smooth 6RM, no grind"],
+    pushPress: ["5x3 @ RPE 7", "5x4 @ RPE 7", "5x5 @ RPE 7-8", "4x4 lighter change-up", "6x3 @ RPE 8", "5x4 heavier than Week 2", "5x5 heavier than Week 3", "Build to smooth 5RM"],
+    powerClean: ["Every 90s x 8: 2 reps light-moderate", "Every 90s x 9: 2 reps", "Every 2:00 x 8: 1 clean pull + 1 power clean", "EMOM 10: 1 tall clean + 1 hang power clean, light", "Every 90s x 10: 2 reps", "Every 2:00 x 9: 1 clean pull + 1 power clean", "Every 2:00 x 8: 2 power cleans, crisp", "Build to a clean technical triple"],
+    pull: ["5x5 assisted pull-up or lat pulldown", "5x6 pull-up/assisted or 5x8 pulldown", "5x7 pull-up/assisted or 5x10 pulldown", "4x6 lighter change-up", "6x5 harder variation", "5x6-8", "5x8 or heavier pulldown", "Best clean set of 5-8"],
+    rdl: ["4x6 @ RPE 6-7", "4x7 @ RPE 7", "4x8 @ RPE 7", "3x8 lighter change-up", "5x6 @ RPE 8", "4x7 heavier than Week 2", "4x8 heavier than Week 3", "Build to smooth 8RM"],
+    inclinePress: ["4x6 @ RPE 7", "4x7 @ RPE 7", "4x8 @ RPE 7-8", "3x8 lighter change-up", "5x6 @ RPE 8", "4x7 heavier than Week 2", "4x8 heavier than Week 3", "Build to smooth 8RM"]
   },
-  accessories: {
-    upperPull: ["Superset with the main lift", "3x12-15 rear delt fly", "3x10-12 cable curl"],
-    upperPush: ["Superset with the main lift", "4x8-10 DB bench or floor press", "3x10-12 chest-supported row"],
-    overhead: ["Superset with the main lift", "3x12 straight-arm pulldown", "3x12 standing calf raises"],
-    gluteA: ["2 focused rounds, rest 60s between rounds", "12/12 B-stance hip thrust", "15 cable or banded kickbacks/side"],
-    gluteB: ["2 focused rounds, rest 60s between rounds", "10/10 Bulgarian split squat", "15 seated hip abduction"],
-    gluteC: ["2 focused rounds, rest 60s between rounds", "12/12 knee-high step-ups", "15 back extensions with squeeze"],
-    coreA: ["3 sets: 20s hollow hold", "10 V-ups"],
-    coreB: ["3 sets: 10 dead bugs/side", "12 Pallof presses/side"],
-    arms: ["3x10 incline DB press", "3x10 chest-supported row"],
-    pump: ["2 rounds, rest 60s between rounds", "15 goblet squats", "15 KB RDLs"],
-    engine: ["18-22 min Zone 2 row, bike, ski, or run", "Nasal-breathing pace", "Keep it conversational"]
-  },
-  weekVariations: {
-    thrust: [
-      { movement: "Barbell hip thrust", builder: ["3x10-12 Bulgarian split squat/side", "3x12 cable kickback/side", "2x20 seated hip abduction"] },
-      { movement: "Smith machine hip thrust", builder: ["3x10 leg press, feet high", "3x10-12 walking lunge/side", "2x20 banded abduction"] },
-      { movement: "Single-leg hip thrust", builder: ["4x8 deficit reverse lunge/side", "3x12 cable pull-through", "2x15 cable abduction/side"] },
-      { movement: "KAS glute bridge", builder: ["2x15 goblet squat", "2x15 cable kickback/side", "2x25 frog pumps"] },
-      { movement: "B-stance hip thrust", builder: ["3x8-10 Bulgarian split squat/side", "3x10-12 hack squat or leg press", "3x15 seated hip abduction"] },
-      { movement: "Hip thrust machine", builder: ["4x10 reverse lunge/side", "3x12 cable kickback/side", "2x20 abduction dropset"] },
-      { movement: "Smith machine hip thrust", builder: ["3x8 heavy step-up/side", "3x10 B-stance RDL/side", "2x20 banded abduction"] },
-      { movement: "Barbell hip thrust", builder: ["2x12 easy split squat/side", "2x15 cable kickback/side", "1x50 banded abduction"] }
-    ],
-    squat: [
-      { movement: "Back squat", builder: ["3x10 DB Romanian deadlift", "3x10 reverse lunge/side", "2x15 leg extension"] },
-      { movement: "Front squat", builder: ["3x12 hip thrust machine", "3x10 step-up/side", "2x15 hamstring curl"] },
-      { movement: "Leg press", builder: ["3x8-10 walking lunge/side", "3x12 DB RDL", "2x20 seated hip abduction"] },
-      { movement: "Goblet squat", builder: ["2x15 single-leg glute bridge/side", "2x12 lateral lunge/side", "2x15 hamstring curl"] },
-      { movement: "Back squat", builder: ["4x8 Romanian deadlift", "3x10 Bulgarian split squat/side", "2x15 leg extension"] },
-      { movement: "Hack squat or belt squat", builder: ["3x10 hip thrust machine", "3x12 walking lunge/side", "2x20 cable abduction"] },
-      { movement: "Front squat", builder: ["4x8 leg press", "3x10 reverse lunge/side", "3x12 hamstring curl"] },
-      { movement: "Leg press", builder: ["2x12 DB RDL", "2x12 split squat/side", "1x30 seated hip abduction"] }
-    ],
-    hinge: [
-      { movement: "Romanian deadlift", builder: ["3x12 cable pull-through", "3x12 back extension with glute squeeze", "2x15 hamstring curl"] },
-      { movement: "Trap-bar deadlift", builder: ["3x10 single-leg RDL/side", "3x12 hip thrust machine", "2x15 back extension"] },
-      { movement: "DB Romanian deadlift", builder: ["3x12 cable pull-through", "3x10 step-up/side", "2x20 hamstring curl"] },
-      { movement: "Back extension", builder: ["2x15 light DB RDL", "2x12 cable pull-through", "2x10 bird-dog/side"] },
-      { movement: "Romanian deadlift", builder: ["4x10 hip thrust machine", "3x12 back extension", "3x12 hamstring curl"] },
-      { movement: "Trap-bar deadlift", builder: ["3x8 B-stance RDL/side", "3x12 cable pull-through", "2x20 hamstring curl"] },
-      { movement: "Barbell Romanian deadlift", builder: ["3x10 single-leg hip thrust/side", "3x12 back extension", "2x15 cable kickback/side"] },
-      { movement: "Romanian deadlift", builder: ["2x12 cable pull-through", "2x15 hamstring curl", "2x15 Pallof press/side"] }
-    ],
-    upper: [
-      { movement: "DB bench press", builder: ["3x10 seated machine row", "3x12 machine shoulder press", "2x15 lateral raise"] },
-      { movement: "Incline DB press", builder: ["4x8 lat pulldown", "3x10 landmine press/side", "2x15 rear delt fly"] },
-      { movement: "Bench press", builder: ["3x10 seated cable row", "3x12 Arnold press", "2x12 triceps pushdown"] },
-      { movement: "Push-up or DB floor press", builder: ["2x12 ring row", "2x12 light shoulder press", "2x15 band pull-apart"] },
-      { movement: "Landmine press", builder: ["4x8 chest-supported row", "3x10 incline DB press", "3x12 lateral raise"] },
-      { movement: "Incline DB press", builder: ["4x10 lat pulldown", "3x10 seated cable row", "2x15 rear delt fly"] },
-      { movement: "Bench press", builder: ["4x8 single-arm DB row/side", "3x10 Arnold press", "2x12 triceps pushdown"] },
-      { movement: "DB floor press", builder: ["2x12 cable row", "2x15 lateral raise", "2x12 hammer curl"] }
-    ],
-    pump: [
-      ["3x12 cable row", "3x12 machine chest press", "3x15 lateral raises", "3x12 hammer curls"],
-      ["3x10 seated row", "3x10 incline push-ups or machine chest press", "3x15 rear delt fly", "3x12 rope triceps pushdown"],
-      ["3x12 lat pulldown", "3x12 Arnold press", "3x15 cable curls", "3x12 face pulls"],
-      ["2x15 ring rows", "2x15 cable fly", "2x20 band pull-aparts", "2x15 light curls"],
-      ["4x10 cable row", "3x12 cable fly or pec deck", "3x15 lateral raise", "3x12 triceps pushdown"],
-      ["3x12 chest-supported row", "3x10 machine chest press", "3x15 rear delt fly", "3x12 hammer curls"],
-      ["4x8 lat pulldown", "3x12 push-ups", "3x12 Arnold press", "2x15 cable curls"],
-      ["2x12 seated row", "2x12 DB bench press", "2x15 lateral raise", "2x12 rope pressdown"]
-    ],
-    trunk: [
-      ["4 sets: 12 weighted sit-ups", "3x30-45s farmer carry"],
-      ["4 sets: 8-12 V-ups", "3x12 Pallof press/side"],
-      ["EMOM 8: 10 hollow rocks", "3x30s side plank/side"],
-      ["3 rounds: 10 dead bugs/side + 30s hollow hold", "2 easy farmer carries"],
-      ["5 sets: 12 GHD sit-ups or abmat sit-ups", "3x40 m suitcase carry/side"],
-      ["4 sets: 10 hanging knee raises", "3x12 cable chops/side"],
-      ["EMOM 10: 12 V-ups", "3x30-45s farmer carry"],
-      ["Retest: 2:00 max clean sit-ups", "2x12 dead bugs/side"]
-    ]
-  },
+  weeklyNotes: [
+    "Start conservative. Learn the flow and leave 2-3 reps in reserve on lifts after hard conditioning.",
+    "Add one rep per set or a small load jump where movement quality stayed clean.",
+    "Make this the hardest week of Block 1, but keep hard-cardio-day lifts moderate.",
+    "Change-up week: reduce load 10-15%, move well, and finish feeling recovered.",
+    "Start Block 2 slightly heavier than Week 2, not heavier than your best-ever numbers.",
+    "Build density: shorter rests on accessories or a small load increase on main lifts.",
+    "Peak the block with strong repeatable efforts, still no ugly reps after cardio.",
+    "Retest cleanly. Record scores, loads, and what felt best for the next cycle."
+  ],
   cardio: {
-    daily: [
-      {
-        format: "Day 1 machine / run Zone 2 - 30-45 min",
-        moves: ["Choose one machine or run outside/treadmill", "Stay conversational the whole time", "Optional: finish with 4 x 20s relaxed pickups"],
-        options: ["Run", "StairMaster steady climb", "Bike Zone 2", "Row Zone 2", "Ski erg easy", "Elliptical", "Incline treadmill walk"],
-        goal: "Build the aerobic base without taking away from the glute lifting."
-      },
-      {
-        format: "Day 2 clean + gymnastics conditioning - 30-40 min",
-        moves: ["Every 5:00 x 6-8 rounds", "300 m row or 15/12 cal bike", "8 front rack reverse lunges", "10 burpees or up-downs", "Rest the remaining time"],
-        options: ["Goblet reverse lunges", "Front squats instead of lunges", "Box jump-overs instead of burpees", "Ski erg instead of row", "Bike instead of row"],
-        goal: "Keep the CrossFit feel after clean skill without repeating power cleans immediately."
-      },
-      {
-        format: "Day 3 StairMaster / incline - 30-45 min",
-        moves: ["Hold a level you can sustain without leaning on the rails", "Every 5:00 add 30s strong climb", "Keep the final 10 minutes smooth, not frantic"],
-        options: ["StairMaster", "Incline treadmill walk", "Elliptical hill mode", "Bike climb ride", "Row steady"],
-        goal: "Glute-friendly conditioning with steady breathing and no leg burnout."
-      },
-      {
-        format: "Day 4 upper engine EMOM - 32-40 min",
-        moves: ["EMOM 32-40", "Min 1: 12 wall balls or goblet squats", "Min 2: 12/10 cal bike or ski", "Min 3: 10 box step-overs", "Min 4: 10 ring rows"],
-        options: ["Air squats instead of wall balls", "Step-ups instead of box step-overs", "Lat pulldown instead of ring rows", "Row instead of bike"],
-        goal: "Condition hard after push press without repeating the same press pattern."
-      },
-      {
-        format: "Day 5 machine intervals - 30-45 min",
-        moves: ["5 min easy", "10 rounds: 1:00 hard / 1:00 easy", "10-20 min easy Zone 2 to finish"],
-        options: ["Bike", "Row", "Ski erg", "Elliptical", "Incline treadmill", "StairMaster"],
-        goal: "A machine day that builds the engine without adding more loaded leg volume."
-      },
-      {
-        format: "Day 6 mixed modal - 35-40 min",
-        moves: ["5 rounds, smooth hard pace", "400 m run or 500 m row", "15 KB swings", "20 sit-ups", "10 burpees or up-downs"],
-        options: ["Bike 25/20 cal instead of run", "Ski 20/16 cal instead of run", "KB deadlift instead of swing", "Step-back burpees"],
-        goal: "Full-body conditioning with CrossFit flavor while keeping the loading manageable."
-      },
-      {
-        format: "Recovery machine / walk - 30-45 min",
-        moves: ["Pick the easiest machine or walk", "Nasal breathing as much as possible", "Add 10 min mobility after if hips or calves feel tight"],
-        options: ["Easy bike", "Easy row", "Elliptical", "Incline walk", "Light swim", "Mobility walk", "Easy StairMaster"],
-        goal: "Get the daily cardio done while still treating the day as recovery."
-      }
-    ]
+    mondayEmom: {
+      format: "20 min EMOM",
+      target: "Cardio target: 20 minutes",
+      moves: ["Min 1: 12/10 cal bike", "Min 2: 10 box jumps", "Min 3: 12 DB walking lunges", "Min 4: 10 toes-to-bar or hanging knee raises", "Repeat 5 rounds"],
+      options: ["Step-ups instead of box jumps", "Hanging knee raises instead of T2B", "Row calories instead of bike", "Bodyweight lunges if legs are smoked"],
+      goal: "Cardio first. Then lower strength stays moderate, about 7/10 effort."
+    },
+    tuesdayZone2: {
+      format: "30-45 min Zone 2",
+      target: "Cardio target: 30-45 minutes",
+      moves: ["Pick one machine or steady option", "Keep breathing controlled", "You should be able to speak in short sentences"],
+      options: ["Incline walk", "Bike", "StairMaster", "Easy row"],
+      goal: "Steady cardio first. Upper push can still be lifted normally."
+    },
+    wednesdayChipper: {
+      format: "25-30 min chipper, controlled pace",
+      target: "Cardio target: 25-30 minutes",
+      moves: ["50 wall balls", "40 sit-ups", "30 box step-overs", "25 cal row", "20 DB snatches", "15 burpees", "25 cal bike", "30 kettlebell swings", "40 walking lunges", "50 double unders or 100 single unders"],
+      options: ["Goblet squats instead of wall balls", "DB step-overs instead of box step-overs", "KB swings instead of DB snatches", "Single unders instead of double unders"],
+      goal: "This is the cardio for the day. Olympic lifting after stays light and technical."
+    },
+    thursdayZone2: {
+      format: "30-45 min Zone 2",
+      target: "Cardio target: 30-45 minutes",
+      moves: ["Pick one steady option", "Stay easy enough to recover", "No hard intervals today"],
+      options: ["Easy run", "Incline walk", "Bike", "StairMaster", "Row"],
+      goal: "Steady cardio first. Upper pull can be lifted heavier than hard-conditioning days."
+    },
+    fridayAmrap: {
+      format: "22 min AMRAP",
+      target: "Cardio target: 22 minutes",
+      moves: ["10 cal bike", "10 kettlebell swings", "10 step-ups each leg", "10 ball slams", "10 V-ups or dead bugs"],
+      options: ["KB deadlifts instead of swings", "Box step-overs instead of step-ups", "Dead bugs instead of V-ups", "Row instead of bike"],
+      goal: "As many quality rounds as possible. Posterior lifting after stays controlled."
+    },
+    saturdayZone2: {
+      format: "30-45 min machine cardio",
+      target: "Cardio target: 30-45 minutes",
+      moves: ["Pick one machine", "Mostly Zone 2", "No sprint finish needed"],
+      options: ["StairMaster", "Incline treadmill", "Bike", "Rower", "Elliptical"],
+      goal: "Cardio first, then full-body pump work."
+    },
+    sundayRecovery: {
+      format: "30-45 min easy recovery cardio",
+      target: "Cardio target: 30-45 minutes",
+      moves: ["Keep it easy", "Stay conversational", "Stop before it feels like training"],
+      options: ["Walk outside", "Incline treadmill walk", "Easy bike", "Easy swim", "Light elliptical"],
+      goal: "Recovery only. No lift."
+    }
   }
 };
