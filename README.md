@@ -16,16 +16,6 @@ Most changes happen in `workouts.js`.
 The app saves completed workouts, cardio scores, lifting logs, and notes in browser `localStorage`.
 Use the Reset Progress button to clear saved local data.
 
-## Nutrition Tracker
-
-The Nutrition section tracks bodybuilding macros and daily calories.
-
-- Edit the daily calorie, protein, carb, and fat targets at the top of the panel.
-- Use the structured meal plan as a template for breakfast, lunch, pre-workout, dinner, and snacks.
-- Add food from the quick list or enter custom calories/macros.
-- Change the date to review or log a different day.
-- Food logs are included in the same backup, import, reset, and phone sync flow as workout progress.
-
 ## Plan Structure
 
 - Monday: EMOM + lower strength + glutes
