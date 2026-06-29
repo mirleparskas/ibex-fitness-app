@@ -1,10 +1,63 @@
 const PLAN_KEY = "cardio-first-glute-recomp-v1";
+const NUTRITION_DEFAULT_TARGETS = {
+  calories: 2150,
+  protein: 165,
+  carbs: 225,
+  fat: 65
+};
+
+const NUTRITION_MEALS = [
+  {
+    name: "Breakfast",
+    target: "40g protein / 55g carbs / 15g fat",
+    ideas: ["Greek yogurt, berries, oats, whey", "Egg whites, whole egg, sourdough, fruit"]
+  },
+  {
+    name: "Lunch",
+    target: "45g protein / 65g carbs / 18g fat",
+    ideas: ["Chicken rice bowl with vegetables", "Turkey wrap, potatoes, side salad"]
+  },
+  {
+    name: "Pre-workout",
+    target: "25g protein / 50g carbs / low fat",
+    ideas: ["Whey and banana", "Rice cakes, lean deli turkey, fruit"]
+  },
+  {
+    name: "Dinner",
+    target: "45g protein / 45g carbs / 22g fat",
+    ideas: ["Salmon, jasmine rice, asparagus", "Lean beef, sweet potato, greens"]
+  },
+  {
+    name: "Snack",
+    target: "10g protein / flexible macros",
+    ideas: ["Cottage cheese", "Protein bar", "Casein pudding"]
+  }
+];
+
+const FOOD_PRESETS = [
+  { name: "Chicken breast, cooked 4 oz", calories: 185, protein: 35, carbs: 0, fat: 4 },
+  { name: "Lean ground beef 96%, cooked 4 oz", calories: 170, protein: 24, carbs: 0, fat: 8 },
+  { name: "Salmon, cooked 4 oz", calories: 235, protein: 25, carbs: 0, fat: 14 },
+  { name: "Egg whites 1 cup", calories: 125, protein: 26, carbs: 2, fat: 0 },
+  { name: "Whole egg", calories: 70, protein: 6, carbs: 0, fat: 5 },
+  { name: "Greek yogurt 0%, 170g", calories: 100, protein: 17, carbs: 6, fat: 0 },
+  { name: "Whey protein 1 scoop", calories: 120, protein: 24, carbs: 3, fat: 2 },
+  { name: "Jasmine rice, cooked 1 cup", calories: 205, protein: 4, carbs: 45, fat: 0 },
+  { name: "Oats, dry 1/2 cup", calories: 150, protein: 5, carbs: 27, fat: 3 },
+  { name: "Sweet potato, cooked 200g", calories: 180, protein: 4, carbs: 41, fat: 0 },
+  { name: "Banana, medium", calories: 105, protein: 1, carbs: 27, fat: 0 },
+  { name: "Avocado 1/2", calories: 120, protein: 2, carbs: 6, fat: 11 },
+  { name: "Olive oil 1 tbsp", calories: 120, protein: 0, carbs: 0, fat: 14 },
+  { name: "Peanut butter 1 tbsp", calories: 95, protein: 4, carbs: 3, fat: 8 },
+  { name: "Cottage cheese 1 cup", calories: 180, protein: 26, carbs: 10, fat: 5 }
+];
 
 const state = {
   week: Number(localStorage.getItem(`fit.week.${PLAN_KEY}`) || 0),
   expanded: false,
   search: "",
-  openDays: new Set()
+  openDays: new Set(),
+  nutritionDate: localIsoDate()
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -222,6 +275,7 @@ function render() {
   localStorage.setItem(`fit.week.${PLAN_KEY}`, String(state.week));
   renderTabs();
   renderBanner();
+  renderNutrition();
   renderDays();
   applySearch();
 }
@@ -254,6 +308,209 @@ function renderBanner() {
     </div>
     <span>${escapeHtml(block.weeks)}</span>
   `;
+}
+
+function renderNutrition() {
+  const mount = $("#nutritionApp");
+  if (!mount) return;
+
+  const targets = readNutritionTargets();
+  const entries = readNutritionEntries(state.nutritionDate);
+  const totals = calculateNutritionTotals(entries);
+  const remaining = {
+    calories: targets.calories - totals.calories,
+    protein: targets.protein - totals.protein,
+    carbs: targets.carbs - totals.carbs,
+    fat: targets.fat - totals.fat
+  };
+
+  mount.innerHTML = `
+    <div class="nutrition-head">
+      <div>
+        <p class="kicker">Bodybuilding Nutrition</p>
+        <h2>Macros, Meal Plan, Daily Log</h2>
+        <p>Targets are editable. Log meals from your phone, and totals calculate automatically.</p>
+      </div>
+      <label class="nutrition-date">
+        <span>Date</span>
+        <input id="nutritionDate" type="date" value="${escapeAttr(state.nutritionDate)}">
+      </label>
+    </div>
+
+    <div class="macro-targets">
+      ${renderMacroTarget("calories", "Calories", targets.calories)}
+      ${renderMacroTarget("protein", "Protein g", targets.protein)}
+      ${renderMacroTarget("carbs", "Carbs g", targets.carbs)}
+      ${renderMacroTarget("fat", "Fat g", targets.fat)}
+    </div>
+
+    <div class="macro-summary">
+      ${renderMacroSummary("Calories", totals.calories, targets.calories, remaining.calories)}
+      ${renderMacroSummary("Protein", totals.protein, targets.protein, remaining.protein, "g")}
+      ${renderMacroSummary("Carbs", totals.carbs, targets.carbs, remaining.carbs, "g")}
+      ${renderMacroSummary("Fat", totals.fat, targets.fat, remaining.fat, "g")}
+    </div>
+
+    <div class="nutrition-grid">
+      <div class="meal-plan">
+        <div class="panel-title">Structured Meal Plan</div>
+        ${NUTRITION_MEALS.map((meal) => `
+          <article class="meal-template">
+            <div>
+              <h3>${escapeHtml(meal.name)}</h3>
+              <p>${escapeHtml(meal.target)}</p>
+            </div>
+            <ul>
+              ${meal.ideas.map((idea) => `<li>${escapeHtml(idea)}</li>`).join("")}
+            </ul>
+          </article>
+        `).join("")}
+      </div>
+
+      <div class="food-log-panel">
+        <div class="panel-title">Food Log</div>
+        <form id="foodForm" class="food-form">
+          <label>
+            <span>Meal</span>
+            <select id="foodMeal">
+              ${NUTRITION_MEALS.map((meal) => `<option value="${escapeAttr(meal.name)}">${escapeHtml(meal.name)}</option>`).join("")}
+            </select>
+          </label>
+          <label>
+            <span>Quick food</span>
+            <select id="foodPreset">
+              <option value="">Custom entry</option>
+              ${FOOD_PRESETS.map((food, index) => `<option value="${index}">${escapeHtml(food.name)}</option>`).join("")}
+            </select>
+          </label>
+          <label class="food-name">
+            <span>Food</span>
+            <input id="foodName" required placeholder="Food name">
+          </label>
+          <label>
+            <span>Servings</span>
+            <input id="foodServings" type="number" inputmode="decimal" min="0.1" step="0.1" value="1">
+          </label>
+          <label>
+            <span>Calories</span>
+            <input id="foodCalories" type="number" inputmode="decimal" min="0" step="1" placeholder="0">
+          </label>
+          <label>
+            <span>Protein g</span>
+            <input id="foodProtein" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+          </label>
+          <label>
+            <span>Carbs g</span>
+            <input id="foodCarbs" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+          </label>
+          <label>
+            <span>Fat g</span>
+            <input id="foodFat" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+          </label>
+          <button type="submit">Add food</button>
+        </form>
+
+        <div class="food-log">
+          ${entries.length ? entries.map(renderFoodEntry).join("") : `<p class="empty-log">No food logged for this date yet.</p>`}
+        </div>
+      </div>
+    </div>
+  `;
+
+  bindNutritionEvents();
+}
+
+function renderMacroTarget(key, label, value) {
+  return `
+    <label>
+      <span>${escapeHtml(label)}</span>
+      <input class="macro-input" type="number" inputmode="numeric" min="0" step="1" value="${escapeAttr(value)}" data-macro="${escapeAttr(key)}">
+    </label>
+  `;
+}
+
+function renderMacroSummary(label, total, target, remaining, suffix = "") {
+  const percent = target > 0 ? Math.min(100, Math.round((total / target) * 100)) : 0;
+  const status = remaining >= 0 ? `${formatMacro(remaining)}${suffix} left` : `${formatMacro(Math.abs(remaining))}${suffix} over`;
+  return `
+    <article class="macro-card">
+      <div>
+        <span>${escapeHtml(label)}</span>
+        <b>${formatMacro(total)}${suffix}</b>
+      </div>
+      <p>${escapeHtml(status)} / ${formatMacro(target)}${suffix} target</p>
+      <div class="macro-bar"><span style="width: ${percent}%"></span></div>
+    </article>
+  `;
+}
+
+function renderFoodEntry(entry) {
+  return `
+    <article class="food-entry">
+      <div>
+        <span>${escapeHtml(entry.meal)}</span>
+        <h3>${escapeHtml(entry.name)}</h3>
+        <p>${formatMacro(entry.servings)} serving${Number(entry.servings) === 1 ? "" : "s"} - ${formatMacro(entry.calories)} cal / P ${formatMacro(entry.protein)}g / C ${formatMacro(entry.carbs)}g / F ${formatMacro(entry.fat)}g</p>
+      </div>
+      <button class="delete-food" type="button" data-food-id="${escapeAttr(entry.id)}" aria-label="Delete ${escapeAttr(entry.name)}">Delete</button>
+    </article>
+  `;
+}
+
+function bindNutritionEvents() {
+  $("#nutritionDate")?.addEventListener("change", (event) => {
+    state.nutritionDate = event.target.value || localIsoDate();
+    renderNutrition();
+  });
+
+  $$(".macro-input").forEach((input) => {
+    input.addEventListener("change", () => {
+      const targets = readNutritionTargets();
+      targets[input.dataset.macro] = numberFromInput(input.value);
+      writeJson("fit.nutrition.targets", targets);
+      renderNutrition();
+    });
+  });
+
+  $("#foodPreset")?.addEventListener("change", (event) => {
+    const preset = FOOD_PRESETS[Number(event.target.value)];
+    if (!preset) return;
+    $("#foodName").value = preset.name;
+    $("#foodServings").value = "1";
+    $("#foodCalories").value = preset.calories;
+    $("#foodProtein").value = preset.protein;
+    $("#foodCarbs").value = preset.carbs;
+    $("#foodFat").value = preset.fat;
+  });
+
+  $("#foodForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const servings = Math.max(0, numberFromInput($("#foodServings").value) || 1);
+    const entry = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      meal: $("#foodMeal").value,
+      name: $("#foodName").value.trim(),
+      servings,
+      calories: roundMacro(numberFromInput($("#foodCalories").value) * servings),
+      protein: roundMacro(numberFromInput($("#foodProtein").value) * servings),
+      carbs: roundMacro(numberFromInput($("#foodCarbs").value) * servings),
+      fat: roundMacro(numberFromInput($("#foodFat").value) * servings),
+      createdAt: new Date().toISOString()
+    };
+    if (!entry.name) return;
+    const entries = readNutritionEntries(state.nutritionDate);
+    entries.push(entry);
+    writeNutritionEntries(state.nutritionDate, entries);
+    renderNutrition();
+  });
+
+  $$(".delete-food").forEach((button) => {
+    button.addEventListener("click", () => {
+      const entries = readNutritionEntries(state.nutritionDate).filter((entry) => entry.id !== button.dataset.foodId);
+      writeNutritionEntries(state.nutritionDate, entries);
+      renderNutrition();
+    });
+  });
 }
 
 function renderDays() {
@@ -752,7 +1009,7 @@ function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, move
 function renderSetRow(set, trackKey, movementId, movement, setIndex, setCount, mode = "strength") {
   const firstField = mode === "time" ? "duration" : "weight";
   const secondField = mode === "time" ? "load" : "reps";
-  const firstValue = mode === "time" ? set.duration || set.weight || "" : set.weight || "";
+  const firstValue = mode === "time" ? set.duration || set.weight || "" : set.weight || set.duration || set.load || "";
   const secondValue = mode === "time" ? set.load || "" : set.reps || "";
   const firstPlaceholder = mode === "time" ? "30s, 1:00..." : "0";
   const secondPlaceholder = mode === "time" ? "Band, BW..." : "0";
@@ -887,6 +1144,70 @@ function writeJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function localIsoDate(date = new Date()) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+function numberFromInput(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function roundMacro(value) {
+  return Math.round((Number(value) || 0) * 10) / 10;
+}
+
+function formatMacro(value) {
+  const rounded = roundMacro(value);
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function readNutritionTargets() {
+  const saved = readJson("fit.nutrition.targets", {});
+  return {
+    calories: numberFromInput(saved.calories || NUTRITION_DEFAULT_TARGETS.calories),
+    protein: numberFromInput(saved.protein || NUTRITION_DEFAULT_TARGETS.protein),
+    carbs: numberFromInput(saved.carbs || NUTRITION_DEFAULT_TARGETS.carbs),
+    fat: numberFromInput(saved.fat || NUTRITION_DEFAULT_TARGETS.fat)
+  };
+}
+
+function nutritionLogKey(date) {
+  return `fit.nutrition.log.${date || localIsoDate()}`;
+}
+
+function readNutritionEntries(date) {
+  const entries = readJson(nutritionLogKey(date), []);
+  return Array.isArray(entries)
+    ? entries.map((entry) => ({
+      id: entry.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      meal: entry.meal || "Meal",
+      name: entry.name || "Food",
+      servings: numberFromInput(entry.servings || 1),
+      calories: roundMacro(entry.calories),
+      protein: roundMacro(entry.protein),
+      carbs: roundMacro(entry.carbs),
+      fat: roundMacro(entry.fat),
+      createdAt: entry.createdAt || ""
+    }))
+    : [];
+}
+
+function writeNutritionEntries(date, entries) {
+  writeJson(nutritionLogKey(date), entries);
+}
+
+function calculateNutritionTotals(entries) {
+  return entries.reduce((totals, entry) => {
+    totals.calories += numberFromInput(entry.calories);
+    totals.protein += numberFromInput(entry.protein);
+    totals.carbs += numberFromInput(entry.carbs);
+    totals.fat += numberFromInput(entry.fat);
+    return totals;
+  }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+}
+
 function getProgressBackup() {
   return Object.keys(localStorage)
     .filter((key) => key.startsWith("fit."))
@@ -1015,6 +1336,7 @@ function complexPartsFromPrescription(prescription) {
 
 function trackingModeForMovement(category, rawMovement, prescription) {
   const text = `${rawMovement || ""} ${prescription || ""}`.toLowerCase();
+  if (category === "olympic") return "strength";
   if (category === "core") return "time";
   if (/plank|hold|hollow|copenhagen|bird-dog|mobility|stretch/.test(text)) return "time";
   if (/\b\d+\s*(s|sec|seconds?|min|minutes?)\b/.test(text)) return "time";
