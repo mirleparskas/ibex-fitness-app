@@ -11,6 +11,7 @@ Most changes happen in `workouts.js`.
 - Weekly rules, warm-ups, and block notes: edit `PROGRAM.rules`, `PROGRAM.warmups`, and `PROGRAM.blocks`.
 - Day structure and layout behavior: edit `app.js`.
 - Colors, spacing, and responsive design: edit `app.css`.
+- In the app, use Week Layout controls to move/delete days, add days, and add cardio/lift/accessory/note sections.
 
 The app saves completed workouts, cardio scores, lifting logs, and notes in browser `localStorage`.
 Use the Reset Progress button to clear saved local data.
@@ -29,15 +30,16 @@ The Nutrition section tracks bodybuilding macros and daily calories.
 
 - Monday: EMOM + lower strength + glutes
 - Tuesday: Zone 2 + upper push + shoulders/triceps
-- Wednesday: Chipper + Olympic lift technique + posterior accessories
-- Thursday: Zone 2 + upper pull + back/biceps
+- Wednesday: Zone 2 recovery + optional mobility/core
+- Thursday: Zone 2 + Olympic lift technique + upper pull/back/biceps
 - Friday: AMRAP + posterior chain + glutes/hams
-- Saturday: Zone 2 + full-body pump
+- Saturday: Zone 2 + optional full-body pump
 - Sunday: Recovery cardio only
 
-Every day starts with cardio. On Zone 2 days, lifting can be heavier because the
-cardio is controlled. On EMOM, AMRAP, and chipper days, lifting stays moderate:
-good form only, no testing maxes, and no grinding reps.
+Every day starts with cardio. The default is 4 core lifting days plus an optional
+fifth pump day. On Zone 2 days, lifting can be heavier because the cardio is
+controlled. On EMOM and AMRAP days, lifting stays moderate: good form only, no
+testing maxes, and no grinding reps.
 
 Weeks 1-3 rebuild volume and technique. Week 4 changes the stimulus and lowers
 load. Weeks 5-7 build load, reps, or density. Week 8 retests repeatable effort.

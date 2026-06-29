@@ -502,6 +502,68 @@ button:hover {
   font-size: 11px;
 }
 
+.plan-editor-bar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid rgba(86, 182, 255, .35);
+  border-radius: var(--radius);
+  background: rgba(86, 182, 255, .07);
+}
+
+.plan-editor-bar h2 {
+  margin: 0 0 2px;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.plan-editor-bar p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.plan-editor-actions,
+.day-edit-actions,
+.segment-edit-actions,
+.segment-add-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.plan-editor-actions button,
+.day-edit-actions button,
+.segment-edit-actions button,
+.segment-add-actions button {
+  min-height: 32px;
+  padding: 0 9px;
+  font-size: 11px;
+}
+
+.day-edit-actions {
+  justify-content: flex-end;
+}
+
+.segment-edit-actions {
+  margin-left: auto;
+}
+
+.segment-add {
+  border-style: dashed;
+}
+
+.segment-add-actions button {
+  border-color: rgba(102, 209, 132, .35);
+  color: var(--green);
+}
+
 .day {
   margin-bottom: 12px;
   overflow: hidden;
@@ -516,7 +578,7 @@ button:hover {
 
 .day-head {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto 1fr auto auto auto;
   gap: 12px;
   align-items: center;
   width: 100%;
@@ -1080,6 +1142,11 @@ code {
 
   .day-head {
     grid-template-columns: auto 1fr auto;
+  }
+
+  .day-edit-actions {
+    grid-column: 2 / -1;
+    justify-content: flex-start;
   }
 
   .done {

@@ -1,4 +1,5 @@
-const PLAN_KEY = "cardio-first-glute-recomp-v1";
+const PLAN_KEY = "cardio-first-glute-recomp-v2";
+const PREVIOUS_PLAN_KEYS = ["cardio-first-glute-recomp-v1"];
 const NUTRITION_DEFAULT_TARGETS = {
   calories: 2150,
   protein: 165,
@@ -53,7 +54,7 @@ const FOOD_PRESETS = [
 ];
 
 const state = {
-  week: Number(localStorage.getItem(`fit.week.${PLAN_KEY}`) || 0),
+  week: readInitialWeek(),
   expanded: false,
   search: "",
   openDays: new Set(),
@@ -72,6 +73,15 @@ const progressSync = {
 
 const storageSetItem = Storage.prototype.setItem;
 const storageRemoveItem = Storage.prototype.removeItem;
+
+function readInitialWeek() {
+  const current = localStorage.getItem(`fit.week.${PLAN_KEY}`);
+  if (current !== null) return Number(current) || 0;
+  const previous = PREVIOUS_PLAN_KEYS
+    .map((key) => localStorage.getItem(`fit.week.${key}`))
+    .find((value) => value !== null);
+  return Number(previous) || 0;
+}
 
 Storage.prototype.setItem = function patchedSetItem(key, value) {
   storageSetItem.call(this, key, value);
@@ -149,126 +159,220 @@ function pick(items, weekIndex) {
 }
 
 function buildWeek(weekIndex) {
+  return getEditableWeek(weekIndex);
+}
+
+function buildDefaultWeek(weekIndex) {
   const p = PROGRAM.progressions;
   const c = PROGRAM.cardio;
   const weeklyNote = PROGRAM.weeklyNotes[weekIndex];
 
   return [
     {
+      id: "mon-lower",
       type: "g",
       tag: "M",
       title: "EMOM + Lower Strength + Glutes",
       focus: "Cardio first, then moderate lower strength and glute volume",
       segments: [
-        cardioSeg("1", "Cardio First", c.mondayEmom),
-        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.lower),
-        liftSeg("2", "Main Lift", "Front squat", p.frontSquat[weekIndex], null, "Keep this around 7/10 effort after the EMOM. No maxes or grinding."),
-        listSeg("3", "Then", ["3x8 Bulgarian split squat/leg"]),
-        listSeg("4", "Glute Accessories", ["4x8-10 hip thrust", "3x10-12 hamstring curl", "3x12-15 cable kickbacks/leg", "2x20 abductors"]),
-        textSeg("NOTE", "Week Note", weeklyNote)
+        cardioSeg("1", "Cardio First", c.mondayEmom, "cardio"),
+        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.lower, "warmup"),
+        liftSeg("2", "Main Lift", "Front squat", p.frontSquat[weekIndex], null, "Keep this around 7/10 effort after the EMOM. No maxes or grinding.", "front-squat"),
+        listSeg("3", "Then", ["3x8 Bulgarian split squat/leg"], "split-squat"),
+        listSeg("4", "Glute Accessories", ["4x8-10 hip thrust", "3x10-12 hamstring curl", "3x12-15 cable kickbacks/leg", "2x20 abductors"], "glute-accessories"),
+        textSeg("NOTE", "Week Note", weeklyNote, "week-note")
       ]
     },
     {
+      id: "tue-push",
       type: "c",
       tag: "T",
       title: "Zone 2 + Upper Push",
       focus: "Steady cardio first, then heavier upper push, shoulders, and triceps",
       segments: [
-        cardioSeg("1", "Cardio First", c.tuesdayZone2),
-        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.upper),
-        liftSeg("2", "Main Lift", "Push press", p.pushPress[weekIndex], null, "Zone 2 should not drain this lift. Keep reps crisp and powerful."),
-        listSeg("3", "Then", ["3x8-10 DB bench press"]),
-        listSeg("4", "Shoulders / Chest / Triceps", ["3x8-10 seated DB shoulder press", "4x12-20 lateral raises", "3x10-15 cable fly or push-ups", "3x12-15 triceps rope pressdown", "2x12-15 overhead triceps extension"]),
-        textSeg("NOTE", "Week Note", weeklyNote)
+        cardioSeg("1", "Cardio First", c.tuesdayZone2, "cardio"),
+        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.upper, "warmup"),
+        liftSeg("2", "Main Lift", "Push press", p.pushPress[weekIndex], null, "Zone 2 should not drain this lift. Keep reps crisp and powerful.", "push-press"),
+        listSeg("3", "Then", ["3x8-10 DB bench press"], "db-bench"),
+        listSeg("4", "Shoulders / Chest / Triceps", ["3x8-10 seated DB shoulder press", "4x12-20 lateral raises", "3x10-15 cable fly or push-ups", "3x12-15 triceps rope pressdown", "2x12-15 overhead triceps extension"], "push-accessories"),
+        textSeg("NOTE", "Week Note", weeklyNote, "week-note")
       ]
     },
     {
-      type: "c",
+      id: "wed-recovery",
+      type: "r",
       tag: "W",
-      title: "Chipper + Olympic Lift Technique + Posterior",
-      focus: "Long chipper first, then light technical cleans and posterior accessories",
+      title: "Zone 2 + Mobility",
+      focus: "Cardio-only day unless you want light mobility or core",
       segments: [
-        cardioSeg("1", "Cardio First", c.wednesdayChipper),
-        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.olympic),
-        liftSeg("2", "Main Lift / Skill", "Power clean technique", p.powerClean[weekIndex], null, "Because the chipper is first, keep Olympic lifting light to moderate and technical."),
-        listSeg("3", "Then", ["3x3 clean pull"]),
-        listSeg("4", "Posterior / Back / Core", ["3x12-15 back extensions", "3x10-12 cable row", "3x15-20 rear delt fly", "3x45-60s plank"]),
-        textSeg("NOTE", "Week Note", weeklyNote)
+        cardioSeg("1", "Cardio First", c.thursdayZone2, "cardio"),
+        textSeg("2", "Optional Mobility / Core", "10-15 min easy mobility, dead bugs, side planks, hips, T-spine, and calves.", "mobility"),
+        textSeg("NOTE", "Week Note", weeklyNote, "week-note")
       ]
     },
     {
+      id: "thu-oly-pull",
       type: "c",
       tag: "Th",
-      title: "Zone 2 + Upper Pull",
-      focus: "Steady cardio first, then heavier back and biceps",
+      title: "Olympic Technique + Upper Pull",
+      focus: "Power clean progression, back, biceps, and controlled conditioning",
       segments: [
-        cardioSeg("1", "Cardio First", c.thursdayZone2),
-        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.upper),
-        liftSeg("2", "Main Lift", "Pull-ups, assisted pull-ups, or lat pulldown", p.pull[weekIndex], null, "Use the option that gives full range and strong control."),
-        listSeg("3", "Back / Biceps", ["3x10 single-arm DB row/side", "3x10-12 seated cable row", "3x12-15 straight-arm pulldown", "3x15-20 face pulls", "3x10-12 DB curls", "2x12-15 hammer curls"]),
-        textSeg("NOTE", "Week Note", weeklyNote)
+        cardioSeg("1", "Cardio First", c.tuesdayZone2, "cardio"),
+        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.olympic, "warmup"),
+        liftSeg("2", "Olympic Lift", "Power clean technique", p.powerClean[weekIndex], null, "Keep this progressive and technical: log weight and reps, no misses.", "power-clean"),
+        listSeg("3", "Then", ["3x3 clean pull", "5x5-8 pull-ups, assisted pull-ups, or lat pulldown"], "pull-main"),
+        listSeg("4", "Back / Biceps", ["3x10 single-arm DB row/side", "3x10-12 seated cable row", "3x12-15 straight-arm pulldown", "3x15-20 face pulls", "3x10-12 DB curls", "2x12-15 hammer curls"], "pull-accessories"),
+        textSeg("NOTE", "Week Note", weeklyNote, "week-note")
       ]
     },
     {
+      id: "fri-posterior",
       type: "g",
       tag: "F",
       title: "AMRAP + Posterior Chain + Glutes",
       focus: "Quality AMRAP first, then controlled posterior chain and glute work",
       segments: [
-        cardioSeg("1", "Cardio First", c.fridayAmrap),
-        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.lower),
-        liftSeg("2", "Main Lift", "Romanian deadlift", p.rdl[weekIndex], null, "Controlled reps only after the AMRAP. No sloppy hinge reps."),
-        listSeg("3", "Then", ["4x8-10 hip thrust"]),
-        listSeg("4", "Glutes / Hamstrings", ["3x10-12 hamstring curl", "3x12-15 cable pull-through", "3x15 glute med kickbacks/side", "3x20 abductors", "3x12-15 standing calf raises"]),
-        textSeg("NOTE", "Week Note", weeklyNote)
+        cardioSeg("1", "Cardio First", c.fridayAmrap, "cardio"),
+        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.lower, "warmup"),
+        liftSeg("2", "Main Lift", "Romanian deadlift", p.rdl[weekIndex], null, "Controlled reps only after the AMRAP. No sloppy hinge reps.", "rdl"),
+        listSeg("3", "Then", ["4x8-10 hip thrust"], "hip-thrust"),
+        listSeg("4", "Glutes / Hamstrings", ["3x10-12 hamstring curl", "3x12-15 cable pull-through", "3x15 glute med kickbacks/side", "3x20 abductors", "3x12-15 standing calf raises"], "posterior-accessories"),
+        textSeg("NOTE", "Week Note", weeklyNote, "week-note")
       ]
     },
     {
+      id: "sat-pump",
       type: "c",
       tag: "Sa",
-      title: "Zone 2 + Full-Body Pump",
-      focus: "Machine cardio first, then full-body hypertrophy pump",
+      title: "Optional Zone 2 + Full-Body Pump",
+      focus: "Fifth lifting day if recovery is good; otherwise cardio only",
       segments: [
-        cardioSeg("1", "Cardio First", c.saturdayZone2),
-        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.fullBody),
-        liftSeg("2", "Main Lift", "Incline DB press or bench press", p.inclinePress[weekIndex], null, "This is a pump day, not a max day."),
-        listSeg("3", "Then", ["3x10 goblet squat or tempo squat"]),
-        listSeg("4", "Full-Body Pump", ["3x12 walking lunges/leg", "3x10-12 lat pulldown", "4x15-20 lateral raises", "3x15 cable kickbacks/leg", "3x12 biceps curls", "3x12 triceps pressdowns"]),
-        textSeg("NOTE", "Week Note", weeklyNote)
+        cardioSeg("1", "Cardio First", c.saturdayZone2, "cardio"),
+        textSeg("WU", "Warm-up Before Lifting", PROGRAM.warmups.fullBody, "warmup"),
+        liftSeg("2", "Main Lift", "Incline DB press or bench press", p.inclinePress[weekIndex], null, "Optional pump day. Skip the lift if four weight days is enough this week.", "incline-press"),
+        listSeg("3", "Then", ["3x10 goblet squat or tempo squat"], "squat-pump"),
+        listSeg("4", "Full-Body Pump", ["3x12 walking lunges/leg", "3x10-12 lat pulldown", "4x15-20 lateral raises", "3x15 cable kickbacks/leg", "3x12 biceps curls", "3x12 triceps pressdowns"], "full-pump"),
+        textSeg("NOTE", "Week Note", weeklyNote, "week-note")
       ]
     },
     {
+      id: "sun-recovery",
       type: "r",
       tag: "Su",
       title: "Recovery Cardio Only",
       focus: "Easy cardio, optional mobility and core, no lift",
       segments: [
-        cardioSeg("1", "Cardio", c.sundayRecovery),
-        textSeg("2", "Optional Mobility / Core", "10-15 min: couch stretch 1-2 min/side, pigeon stretch 1-2 min/side, thoracic rotations 10/side, dead bugs 3x10/side, side plank 2x30s/side."),
-        textSeg("NOTE", "Week Note", weeklyNote)
+        cardioSeg("1", "Cardio", c.sundayRecovery, "cardio"),
+        textSeg("2", "Optional Mobility / Core", "10-15 min: couch stretch 1-2 min/side, pigeon stretch 1-2 min/side, thoracic rotations 10/side, dead bugs 3x10/side, side plank 2x30s/side.", "mobility"),
+        textSeg("NOTE", "Week Note", weeklyNote, "week-note")
       ]
     }
   ];
 }
 
-function textSeg(num, name, text) {
-  return { kind: "text", num, name, text };
+function textSeg(num, name, text, id = null) {
+  return { kind: "text", id: id || slug(`${num}-${name}`), num, name, text };
 }
 
-function liftSeg(num, name, movement, prescription, superset, goal) {
-  return { kind: "lift", num, name, movement, prescription, superset, goal };
+function liftSeg(num, name, movement, prescription, superset, goal, id = null) {
+  return { kind: "lift", id: id || slug(`${num}-${name}-${movement}`), num, name, movement, prescription, superset, goal };
 }
 
-function listSeg(num, name, items) {
-  return { kind: "list", num, name, items };
+function listSeg(num, name, items, id = null) {
+  return { kind: "list", id: id || slug(`${num}-${name}`), num, name, items };
 }
 
-function metconSeg(num, name, metcon) {
-  return { kind: "metcon", num, name, metcon };
+function metconSeg(num, name, metcon, id = null) {
+  return { kind: "metcon", id: id || slug(`${num}-${name}`), num, name, metcon };
 }
 
-function cardioSeg(num, name, cardio) {
-  return { kind: "cardio", num, name, cardio };
+function cardioSeg(num, name, cardio, id = null) {
+  return { kind: "cardio", id: id || slug(`${num}-${name}`), num, name, cardio };
+}
+
+function customPlanKey(weekIndex = state.week) {
+  return `fit.plan.${PLAN_KEY}.w${weekIndex}`;
+}
+
+function normalizeDay(day, index = 0) {
+  return {
+    id: day.id || `custom-${Date.now()}-${index}`,
+    type: day.type || "c",
+    tag: day.tag || `D${index + 1}`,
+    title: day.title || "Custom Day",
+    focus: day.focus || "Build this day from cardio, lifts, and accessories.",
+    segments: Array.isArray(day.segments) ? day.segments.map((segment, segIndex) => normalizeSegment(segment, segIndex)) : []
+  };
+}
+
+function normalizeSegment(segment, index = 0) {
+  const kind = segment.kind || "text";
+  const base = {
+    kind,
+    id: segment.id || `seg-${Date.now()}-${index}`,
+    num: segment.num || String(index + 1),
+    name: segment.name || labelForSegmentKind(kind)
+  };
+  if (kind === "cardio") {
+    return {
+      ...base,
+      cardio: {
+        format: segment.cardio?.format || "30-45 min cardio",
+        target: segment.cardio?.target || "Cardio target: 30-45 minutes",
+        moves: Array.isArray(segment.cardio?.moves) ? segment.cardio.moves : ["Add cardio details"],
+        options: Array.isArray(segment.cardio?.options) ? segment.cardio.options : [],
+        goal: segment.cardio?.goal || "Keep the effort matched to the day."
+      }
+    };
+  }
+  if (kind === "lift") {
+    return {
+      ...base,
+      movement: segment.movement || "New lift",
+      prescription: segment.prescription || "3x8-10",
+      superset: Array.isArray(segment.superset) ? segment.superset : null,
+      goal: segment.goal || "Use clean reps and log weight/reps."
+    };
+  }
+  if (kind === "list") {
+    return {
+      ...base,
+      items: Array.isArray(segment.items) ? segment.items : ["3x10 new exercise"]
+    };
+  }
+  return {
+    ...base,
+    text: segment.text || "Add notes here."
+  };
+}
+
+function getEditableWeek(weekIndex) {
+  const saved = readJson(customPlanKey(weekIndex), null);
+  if (Array.isArray(saved)) return saved.map(normalizeDay);
+  return buildDefaultWeek(weekIndex).map(normalizeDay);
+}
+
+function saveEditableWeek(days, weekIndex = state.week) {
+  writeJson(customPlanKey(weekIndex), days.map(normalizeDay));
+}
+
+function ensureEditableWeek() {
+  const days = getEditableWeek(state.week);
+  saveEditableWeek(days);
+  return days;
+}
+
+function resetEditableWeek() {
+  localStorage.removeItem(customPlanKey());
+  state.openDays.clear();
+  render();
+}
+
+function labelForSegmentKind(kind) {
+  if (kind === "cardio") return "Cardio";
+  if (kind === "lift") return "Lift";
+  if (kind === "list") return "Exercises";
+  return "Notes";
 }
 
 function render() {
@@ -517,8 +621,10 @@ function renderDays() {
   captureOpenDays();
   const list = $("#dayList");
   list.innerHTML = "";
-  buildWeek(state.week).forEach((day, dayIndex) => {
-    const key = `w${state.week}.${PLAN_KEY}.d${dayIndex}`;
+  const days = buildWeek(state.week);
+  list.appendChild(renderPlanEditorBar(days.length));
+  days.forEach((day, dayIndex) => {
+    const key = `w${state.week}.${PLAN_KEY}.${day.id || `d${dayIndex}`}`;
     const isOpen = state.expanded || state.openDays.has(key);
     const card = document.createElement("article");
     card.className = `day${isOpen ? " open" : ""}`;
@@ -532,6 +638,11 @@ function renderDays() {
           <div class="day-title">${escapeHtml(day.title)}</div>
           <div class="day-focus">${escapeHtml(day.focus)}</div>
         </div>
+        <div class="day-edit-actions">
+          <button class="move-day" type="button" data-day-index="${dayIndex}" data-direction="-1" ${dayIndex === 0 ? "disabled" : ""}>Up</button>
+          <button class="move-day" type="button" data-day-index="${dayIndex}" data-direction="1" ${dayIndex === days.length - 1 ? "disabled" : ""}>Down</button>
+          <button class="delete-day" type="button" data-day-index="${dayIndex}">Delete</button>
+        </div>
         <label class="done" title="Mark complete">
           <input type="checkbox" data-done="${key}" ${localStorage.getItem(`fit.done.${key}`) === "1" ? "checked" : ""}>
           Done
@@ -539,14 +650,15 @@ function renderDays() {
         <div class="chev">v</div>
       </div>
       <div class="day-body">
-        ${day.segments.map((segment, segIndex) => renderSegment(segment, `${key}.s${segIndex}`, dayIndex, segIndex)).join("")}
+        ${day.segments.map((segment, segIndex) => renderSegment(segment, `${key}.${segment.id || `s${segIndex}`}`, dayIndex, segIndex, day.segments.length)).join("")}
+        ${renderSegmentAddControls(dayIndex)}
         ${renderExtraExercises(key, dayIndex)}
         <textarea class="notes" data-note="${key}" placeholder="Session notes...">${escapeHtml(localStorage.getItem(`fit.note.${key}`) || "")}</textarea>
       </div>
     `;
 
     $(".day-head", card).addEventListener("click", (event) => {
-      if (event.target.matches("input")) return;
+      if (event.target.closest("input, button, select, textarea")) return;
       toggleDay(card, key);
     });
     $(".day-head", card).addEventListener("keydown", (event) => {
@@ -557,6 +669,8 @@ function renderDays() {
     });
     list.appendChild(card);
   });
+
+  bindPlanEditingControls();
 
   $$("[data-done]").forEach((box) => {
     box.addEventListener("change", () => {
@@ -756,13 +870,185 @@ function toggleDay(card, key) {
   }
 }
 
+function bindPlanEditingControls() {
+  $("#addDayBtn")?.addEventListener("click", () => {
+    const days = ensureEditableWeek();
+    const title = prompt("Day title?", "Custom Workout Day");
+    if (!title) return;
+    const focus = prompt("Day focus?", "Build this day with cardio, lifts, and accessories.") || "Build this day with cardio, lifts, and accessories.";
+    days.push(normalizeDay({
+      id: `custom-day-${Date.now()}`,
+      type: "c",
+      tag: `D${days.length + 1}`,
+      title,
+      focus,
+      segments: []
+    }, days.length));
+    saveEditableWeek(days);
+    render();
+  });
+
+  $("#resetWeekBtn")?.addEventListener("click", () => {
+    if (confirm("Reset this week's layout back to the default plan? Your logged sets stay saved, but custom day structure is removed.")) resetEditableWeek();
+  });
+
+  $$(".move-day").forEach((button) => {
+    button.addEventListener("click", () => {
+      const days = ensureEditableWeek();
+      const from = Number(button.dataset.dayIndex);
+      const to = from + Number(button.dataset.direction);
+      if (to < 0 || to >= days.length) return;
+      [days[from], days[to]] = [days[to], days[from]];
+      saveEditableWeek(days);
+      render();
+    });
+  });
+
+  $$(".delete-day").forEach((button) => {
+    button.addEventListener("click", () => {
+      const days = ensureEditableWeek();
+      const index = Number(button.dataset.dayIndex);
+      if (!confirm(`Delete ${days[index]?.title || "this day"} from this week layout? Logged data is not deleted.`)) return;
+      days.splice(index, 1);
+      saveEditableWeek(days);
+      render();
+    });
+  });
+
+  $$(".add-segment").forEach((button) => {
+    button.addEventListener("click", () => {
+      const days = ensureEditableWeek();
+      const day = days[Number(button.dataset.dayIndex)];
+      if (!day) return;
+      const segment = promptForSegment(button.dataset.kind, day.segments.length);
+      if (!segment) return;
+      day.segments.push(segment);
+      saveEditableWeek(days);
+      render();
+    });
+  });
+
+  $$(".move-segment").forEach((button) => {
+    button.addEventListener("click", () => {
+      const days = ensureEditableWeek();
+      const day = days[Number(button.dataset.dayIndex)];
+      if (!day) return;
+      const from = Number(button.dataset.segIndex);
+      const to = from + Number(button.dataset.direction);
+      if (to < 0 || to >= day.segments.length) return;
+      [day.segments[from], day.segments[to]] = [day.segments[to], day.segments[from]];
+      saveEditableWeek(days);
+      render();
+    });
+  });
+
+  $$(".delete-segment").forEach((button) => {
+    button.addEventListener("click", () => {
+      const days = ensureEditableWeek();
+      const day = days[Number(button.dataset.dayIndex)];
+      if (!day) return;
+      const index = Number(button.dataset.segIndex);
+      if (!confirm(`Delete ${day.segments[index]?.name || "this section"}? Logged data is not deleted.`)) return;
+      day.segments.splice(index, 1);
+      saveEditableWeek(days);
+      render();
+    });
+  });
+}
+
+function promptForSegment(kind, index) {
+  const id = `custom-seg-${Date.now()}-${index}`;
+  const num = String(index + 1);
+  if (kind === "cardio") {
+    const format = prompt("Cardio format?", "30-45 min Zone 2");
+    if (!format) return null;
+    const moves = prompt("Cardio details? Separate lines with commas.", "Incline walk, bike, StairMaster, or row") || "";
+    const options = prompt("Options/swaps? Separate with commas.", "Incline walk, bike, StairMaster, row") || "";
+    const goal = prompt("Cardio goal?", "Keep this matched to the day.") || "Keep this matched to the day.";
+    return cardioSeg(num, "Cardio", {
+      format,
+      target: format.match(/\d/) ? `Cardio target: ${format}` : "Cardio target: custom",
+      moves: splitPromptList(moves),
+      options: splitPromptList(options),
+      goal
+    }, id);
+  }
+  if (kind === "lift") {
+    const movement = prompt("Lift name?", "Back squat");
+    if (!movement) return null;
+    const prescription = prompt("Sets/reps/progression?", "4x6 @ RPE 7") || "3x8-10";
+    const goal = prompt("Lift goal?", "Log weight and reps. Keep clean form.") || "Log weight and reps. Keep clean form.";
+    return liftSeg(num, "Lift", movement, prescription, null, goal, id);
+  }
+  if (kind === "list") {
+    const name = prompt("Section name?", "Accessories") || "Accessories";
+    const items = prompt("Exercises? Separate with commas.", "3x10 exercise one, 3x12 exercise two");
+    if (!items) return null;
+    return listSeg(num, name, splitPromptList(items), id);
+  }
+  const name = prompt("Note section name?", "Notes") || "Notes";
+  const text = prompt("Notes?", "Add workout notes here.");
+  if (!text) return null;
+  return textSeg(num, name, text, id);
+}
+
+function splitPromptList(value) {
+  return String(value || "")
+    .split(/\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function captureOpenDays() {
   $$(".day.open").forEach((day) => {
     if (day.dataset.dayKey) state.openDays.add(day.dataset.dayKey);
   });
 }
 
-function renderSegment(segment, key, dayIndex, segIndex) {
+function renderPlanEditorBar(dayCount) {
+  const bar = document.createElement("section");
+  bar.className = "plan-editor-bar";
+  bar.innerHTML = `
+    <div>
+      <h2>Week Layout</h2>
+      <p>${dayCount} days. Move days, delete days, or add custom workout/cardio days for this week.</p>
+    </div>
+    <div class="plan-editor-actions">
+      <button id="addDayBtn" type="button">Add day</button>
+      <button id="resetWeekBtn" type="button">Reset week layout</button>
+    </div>
+  `;
+  return bar;
+}
+
+function renderSegmentAddControls(dayIndex) {
+  return `
+    <section class="seg segment-add">
+      <div class="seg-h">
+        <span class="seg-num">+</span>
+        <span class="seg-name">Build This Workout</span>
+      </div>
+      <div class="segment-add-actions">
+        <button class="add-segment" type="button" data-day-index="${dayIndex}" data-kind="cardio">Add cardio</button>
+        <button class="add-segment" type="button" data-day-index="${dayIndex}" data-kind="lift">Add lift</button>
+        <button class="add-segment" type="button" data-day-index="${dayIndex}" data-kind="list">Add exercises</button>
+        <button class="add-segment" type="button" data-day-index="${dayIndex}" data-kind="text">Add notes</button>
+      </div>
+    </section>
+  `;
+}
+
+function renderSegmentEditControls(dayIndex, segIndex, segmentCount) {
+  return `
+    <div class="segment-edit-actions">
+      <button class="move-segment" type="button" data-day-index="${dayIndex}" data-seg-index="${segIndex}" data-direction="-1" ${segIndex === 0 ? "disabled" : ""}>Up</button>
+      <button class="move-segment" type="button" data-day-index="${dayIndex}" data-seg-index="${segIndex}" data-direction="1" ${segIndex === segmentCount - 1 ? "disabled" : ""}>Down</button>
+      <button class="delete-segment" type="button" data-day-index="${dayIndex}" data-seg-index="${segIndex}">Delete</button>
+    </div>
+  `;
+}
+
+function renderSegment(segment, key, dayIndex, segIndex, segmentCount) {
   let body = "";
 
   if (segment.kind === "text") {
@@ -823,6 +1109,7 @@ function renderSegment(segment, key, dayIndex, segIndex) {
       <div class="seg-h">
         <span class="seg-num">${escapeHtml(segment.num)}</span>
         <span class="seg-name">${escapeHtml(segment.name)}</span>
+        ${renderSegmentEditControls(dayIndex, segIndex, segmentCount)}
       </div>
       ${body}
     </section>
