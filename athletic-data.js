@@ -18,6 +18,7 @@ const WEEKLY_TARGETS = {
   hamstrings: { label: "Hamstring sessions", min: 2, max: 4 },
   arms: { label: "Arm sessions", min: 1, max: 3 },
   explosiveUpper: { label: "Explosive upper-body", min: 1, max: 3 }
+  ,physio: { label: "Physio sessions", min: 2, max: 3 }
 };
 
 const ATHLETIC_EXERCISES = {
@@ -33,6 +34,15 @@ const ATHLETIC_EXERCISES = {
   "Chest-supported row": { pattern: "horizontal pull", primary: ["back"], equipment: ["dumbbells", "bench"], categories: ["strength", "hypertrophy"], quality: ["strength"], fatigue: "low", difficulty: "low", impact: "low", stance: "bilateral" },
   "Farmer carry": { pattern: "loaded locomotion", primary: ["core", "grip", "upper back"], equipment: ["dumbbells"], categories: ["carry", "core"], quality: ["work capacity"], fatigue: "medium", difficulty: "low", impact: "low", stance: "locomotion" },
   "Suitcase carry": { pattern: "loaded locomotion", primary: ["core", "grip"], equipment: ["dumbbell"], categories: ["carry", "core"], quality: ["anti-lateral flexion"], fatigue: "low", difficulty: "low", impact: "low", stance: "unilateral" }
+  ,"Seated leg curl": { pattern: "knee flexion", primary: ["hamstrings"], equipment: ["seated leg curl machine"], categories: ["physio", "hypertrophy"], quality: ["controlled strength"], fatigue: "low", difficulty: "low", impact: "low", stance: "bilateral", defaultSets: 3, defaultReps: "8-15", frequency: "2x/week" }
+  ,"Standing leg curl": { pattern: "knee flexion", primary: ["hamstrings"], equipment: ["cable or standing leg curl machine"], categories: ["physio"], quality: ["single-leg control"], fatigue: "low", difficulty: "low", impact: "low", stance: "unilateral" }
+  ,"Standing eccentric calf raise": { pattern: "plantar flexion", primary: ["calves"], equipment: ["standing calf raise machine"], categories: ["physio"], quality: ["eccentric control"], fatigue: "low", difficulty: "medium", impact: "low", stance: "unilateral eccentric" }
+  ,"Single calf raise on machine": { pattern: "plantar flexion", primary: ["calves"], equipment: ["calf raise machine"], categories: ["physio"], quality: ["single-leg strength"], fatigue: "low", difficulty: "low", impact: "low", stance: "unilateral" }
+  ,"Isometric 45-degree weighted back extension": { pattern: "hip extension isometric", primary: ["glutes", "hamstrings", "spinal erectors"], equipment: ["45-degree bench", "weight"], categories: ["physio", "core"], quality: ["isometric endurance"], fatigue: "medium", difficulty: "medium", impact: "low", stance: "bilateral" }
+  ,"45-degree back extension": { pattern: "hinge", primary: ["glutes", "hamstrings", "spinal erectors"], equipment: ["45-degree bench"], categories: ["physio", "hypertrophy"], quality: ["hip control"], fatigue: "low", difficulty: "low", impact: "low", stance: "bilateral", defaultSets: 3, defaultReps: "10", frequency: "2x/week" }
+  ,"Reverse curl with pelvic tilt": { pattern: "spinal flexion and pelvic control", primary: ["lower abdominals"], equipment: ["mat"], categories: ["physio", "core"], quality: ["pelvic control"], fatigue: "low", difficulty: "medium", impact: "low", stance: "bilateral" }
+  ,"Supported hanging knee to chest": { pattern: "hip and trunk flexion", primary: ["abdominals"], equipment: ["captain's chair or back-supported station"], categories: ["physio", "core"], quality: ["trunk control"], fatigue: "low", difficulty: "medium", impact: "low", stance: "bilateral", video: "https://www.youtube.com/shorts/n0IyzC24Imk" }
+  ,"Side-lying hip horizontal abduction": { pattern: "hip horizontal abduction", primary: ["glutes"], equipment: ["bench", "optional weight"], categories: ["physio", "hypertrophy"], quality: ["hip mobility", "glute control"], fatigue: "low", difficulty: "medium", impact: "low", stance: "unilateral" }
 };
 
 function athleticProgression(weekIndex, base) {
@@ -58,6 +68,7 @@ function buildAthleticWeek(weekIndex) {
       lift("3","Main Lift","Front squat",rx("4x5-6"),"front-squat",["squat"]), lift("4","Glute Strength","Barbell hip thrust",rx("4x6-8"),"hip-thrust",["glute"]),
       list("5","Unilateral + Hamstrings",["3x8 Bulgarian split squat/side","3x10-12 hamstring curl","2x15 cable hip abduction"],"lower-accessories",["unilateral","hamstrings","glute"]),
       list("6","Intentional Core",["3x8 dead bug/side","3x30s side plank/side"],"core",["intentionalCore","core"]), txt("R","Mobility","5 min hips, calves, and T-spine.","mobility")
+      ,list("P","Physio A",["3x8-15 seated leg curl — neutral back; pull both heels down","2-3 sets standing eccentric calf raise — rise with both, lower slowly on one","2-3 sets reverse curl with anterior-to-posterior pelvic tilt, then leg raise"],"physio-a",["physio"])
     ],"g"),
     day("upper-class", "D2", "Short Upper Strength + Class", "Athletic upper-body work followed by a group class when scheduled.", 45, ["upper","back","shoulders","arms","explosiveUpper","anaerobic"], [
       txt("WU","Shoulder Preparation","Band pull-aparts, scap push-ups, face pulls, and light pressing.","warmup"),
@@ -73,6 +84,7 @@ function buildAthleticWeek(weekIndex) {
       list("4","Single-Leg Strength",["3x8 step-up/side","3x10 walking or reverse lunge/side"],"unilateral",["unilateral","glute"]),
       list("5","Glutes + Calves",["3x12-15 cable kickback/side","3x15-25 hip abduction","3x10-15 calf raise"],"glute-accessories",["glute"]),
       list("6","Anti-Rotation Core",["3x10 Pallof press/side","2x30-45s suitcase hold/side"],"core",["intentionalCore","core"])
+      ,list("P","Physio B",["2-3 sets standing leg curl — stand tall and brace","2-3 sets single calf raise on machine — full controlled range","3x10 45-degree back extension — hinge from hips with neutral spine","2-3 sets to fatigue side-lying hip horizontal abduction/side — top hip flexed 90°, raise toward ceiling"],"physio-b",["physio"])
     ],"g"),
     day("upper-zone2", "D4", "Upper Hypertrophy + Zone 2", "Build an athletic upper body, carry strength, and cardiovascular base.", 70, ["upper","back","shoulders","arms","explosiveUpper","carry","zone2","core"], [
       txt("WU","Shoulder Preparation","T-spine, band work, scapular control, and ramp-up sets.","warmup"),
@@ -86,6 +98,7 @@ function buildAthleticWeek(weekIndex) {
       lift("3","Glute Strength","Barbell hip thrust",rx("3x8-10"),"hip-thrust",["glute"]),
       list("4","Lower Accessories",["3x8 split squat/side","3x10-15 hamstring curl","2x15-25 glute isolation"],"accessories",["squat","unilateral","hamstrings","glute"]),
       list("5","Dynamic Core",["3x10 hanging knee raise","3x8 bird-dog row/side"],"core",["core"]), txt("C","Group Class","Log actual class demands; hard classes count toward anaerobic load.","class",["anaerobic"])
+      ,list("P","Physio C",["3x8-15 seated leg curl — knees unsupported at seat edge; neutral back","2-3 sets isometric 45-degree weighted back extension — hold torso aligned with thighs","2-3 sets supported hanging knee to chest — use back support; video in exercise library","2-3 sets to fatigue side-lying hip horizontal abduction/side; add weight as needed"],"physio-c",["physio"])
     ],"g"),
     day("full-athletic", "D6", "Full-Body Athletic", "Flexible athletic session; condition only when the hard-day budget allows.", 65, ["jump","olympic","squat","hinge","unilateral","upper","back","carry","core"], [
       lift("1","Jump","Broad jump",rx("4x3"),"broad-jump",["jump"]), lift("2","Olympic Derivative","Clean pull",rx("4x3"),"clean-pull",["olympic","hinge"]),

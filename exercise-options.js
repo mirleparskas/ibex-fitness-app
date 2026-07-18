@@ -52,5 +52,11 @@ const EXERCISE_OPTIONS = {
     "Weighted Russian twist", "Dead bug", "Bird-dog", "Pallof press",
     "Cable chop", "Hanging knee raise", "Toes-to-bar", "GHD sit-up",
     "Farmer carry", "Suitcase carry", "Copenhagen plank"
+  ],
+  physio: [
+    "Seated leg curl", "Standing leg curl", "Standing eccentric calf raise",
+    "Single calf raise on machine", "Isometric 45-degree weighted back extension",
+    "45-degree back extension", "Reverse curl with pelvic tilt",
+    "Supported hanging knee to chest", "Side-lying hip horizontal abduction"
   ]
 };

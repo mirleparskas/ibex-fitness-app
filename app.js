@@ -762,7 +762,7 @@ function renderTargetDashboard() {
   if (!grid || typeof WEEKLY_TARGETS === "undefined") return;
   const days = buildWeek(state.week);
   const counts = targetCounts(days);
-  const priority = ["glute","upper","olympic","jump","sprint","core","intentionalCore","anaerobic","zone2","carry","rest"];
+  const priority = ["glute","upper","olympic","jump","sprint","core","intentionalCore","physio","anaerobic","zone2","carry","rest"];
   grid.innerHTML = priority.map((key) => {
     const target = WEEKLY_TARGETS[key];
     const status = targetStatus(counts.completed[key], counts.planned[key], target);
@@ -1225,6 +1225,10 @@ function cleanDescriptor(rawMovement, base) {
 
 function categoryForMovement(movement) {
   const text = movement.toLowerCase();
+  if (typeof ATHLETIC_EXERCISES !== "undefined") {
+    const match = Object.entries(ATHLETIC_EXERCISES).find(([name]) => text.includes(name.toLowerCase()));
+    if (match?.[1]?.categories?.includes("physio")) return "physio";
+  }
   if (/snatch|clean|jerk|overhead squat/.test(text)) return "olympic";
   if (/hip thrust|glute|bridge|kickback|abduction|abductor|frog|reverse hyper/.test(text)) return "glute";
   if (/squat|lunge|step-up|wall ball|leg press/.test(text)) return "squat";
@@ -1243,6 +1247,7 @@ function optionsForCategory(category, original) {
 }
 
 function labelForCategory(category) {
+  if (category === "physio") return "Physio";
   return {
     squat: "Squat",
     hinge: "Hinge",
