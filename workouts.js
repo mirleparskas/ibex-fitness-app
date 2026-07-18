@@ -1,25 +1,25 @@
 const PROGRAM = {
-  name: "Cardio-First Glute Recomp",
+  name: "Ibex Athletic Training",
   blocks: [
     {
-      name: "Block 1 - Restart",
-      weeks: "Weeks 1-3",
-      summary: "Build consistency with cardio first, moderate lower-body loading after hard conditioning, and stronger upper days after Zone 2."
+      name: "Foundation",
+      weeks: "Weeks 1-2",
+      summary: "Establish baseline performance with conservative loading, moderate volume, and about three repetitions in reserve."
     },
     {
-      name: "Week 4 - Change-Up",
-      weeks: "Week 4",
-      summary: "Change the conditioning formats, pull load back slightly, and keep every lift clean with no grinding."
+      name: "Loading",
+      weeks: "Weeks 3-4",
+      summary: "Add repetitions or small load increases while maintaining movement quality at roughly two repetitions in reserve."
     },
     {
-      name: "Block 2 - Build",
+      name: "Progression",
       weeks: "Weeks 5-7",
-      summary: "Progress load, reps, or density while keeping the same weekly rhythm and protecting recovery."
+      summary: "Complete the heaviest productive work of the block at one to two repetitions in reserve without fatiguing technical lifts."
     },
     {
-      name: "Week 8 - Retest",
+      name: "Deload",
       weeks: "Week 8",
-      summary: "Retest repeatable effort: cleaner rounds, better loads, stronger accessories, and no max-out lifting after hard cardio."
+      summary: "Reduce sets by 40-50%, lower conditioning intensity and jump/sprint volume, and preserve technique before reviewing the block."
     }
   ],
   rules: {

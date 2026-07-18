@@ -1,5 +1,5 @@
-const PLAN_KEY = "cardio-first-glute-recomp-v2";
-const PREVIOUS_PLAN_KEYS = ["cardio-first-glute-recomp-v1"];
+const PLAN_KEY = "ibex-athletic-v3";
+const PREVIOUS_PLAN_KEYS = ["cardio-first-glute-recomp-v2", "cardio-first-glute-recomp-v1"];
 const state = {
   week: readInitialWeek(),
   expanded: false,
@@ -94,8 +94,8 @@ async function saveServerProgress() {
 }
 
 function getWeekBlock(weekIndex) {
-  if (weekIndex < 3) return 0;
-  if (weekIndex === 3) return 1;
+  if (weekIndex < 2) return 0;
+  if (weekIndex < 4) return 1;
   if (weekIndex < 7) return 2;
   return 3;
 }
@@ -109,6 +109,7 @@ function buildWeek(weekIndex) {
 }
 
 function buildDefaultWeek(weekIndex) {
+  if (typeof buildAthleticWeek === "function") return buildAthleticWeek(weekIndex);
   const p = PROGRAM.progressions;
   const c = PROGRAM.cardio;
   const weeklyNote = PROGRAM.weeklyNotes[weekIndex];
@@ -247,6 +248,9 @@ function normalizeDay(day, index = 0) {
     tag: day.tag || `D${index + 1}`,
     title: day.title || "Custom Day",
     focus: day.focus || "Build this day from cardio, lifts, and accessories.",
+    duration: Number.isFinite(Number(day.duration)) ? Number(day.duration) : 60,
+    targets: Array.isArray(day.targets) ? day.targets : [],
+    targetsOverride: Array.isArray(day.targetsOverride) ? day.targetsOverride : null,
     segments: Array.isArray(day.segments) ? day.segments.map((segment, segIndex) => normalizeSegment(segment, segIndex)) : []
   };
 }
@@ -257,7 +261,8 @@ function normalizeSegment(segment, index = 0) {
     kind,
     id: segment.id || `seg-${Date.now()}-${index}`,
     num: segment.num || String(index + 1),
-    name: segment.name || labelForSegmentKind(kind)
+    name: segment.name || labelForSegmentKind(kind),
+    targets: Array.isArray(segment.targets) ? segment.targets : []
   };
   if (kind === "cardio") {
     return {
@@ -325,6 +330,7 @@ function render() {
   localStorage.setItem(`fit.week.${PLAN_KEY}`, String(state.week));
   renderTabs();
   renderBanner();
+  renderTargetDashboard();
   renderDays();
   applySearch();
 }
@@ -335,10 +341,10 @@ function renderTabs() {
 
   for (let i = 0; i < 8; i += 1) {
     const button = document.createElement("button");
-    const test = i === 3 || i === 7;
+    const test = i === 7;
     button.className = `week-tab${i === state.week ? " active" : ""}${test ? " test" : ""}`;
     button.type = "button";
-    button.innerHTML = `<small>${test ? "Test" : "Week"}</small><b>${i + 1}</b>`;
+    button.innerHTML = `<small>${test ? "Deload" : "Week"}</small><b>${i + 1}</b>`;
     button.addEventListener("click", () => {
       state.week = i;
       render();
@@ -376,11 +382,13 @@ function renderDays() {
       <div class="day-head" role="button" tabindex="0">
         <div class="tag ${day.type}">${escapeHtml(day.tag)}</div>
         <div>
-          <div class="day-type">Day ${dayIndex + 1} - ${labelForType(day.type)}</div>
+          <div class="day-type">Session ${dayIndex + 1} · ${labelForType(day.type)} · ${day.duration || 0} min</div>
           <div class="day-title">${escapeHtml(day.title)}</div>
           <div class="day-focus">${escapeHtml(day.focus)}</div>
+          <div class="day-targets">${targetsForDay(day).slice(0, 7).map((target) => `<span>${escapeHtml(WEEKLY_TARGETS[target]?.label || target)}</span>`).join("")}</div>
         </div>
         <div class="day-edit-actions">
+          <button class="edit-day" type="button" data-day-index="${dayIndex}">Edit workout</button>
           <button class="move-day" type="button" data-day-index="${dayIndex}" data-direction="-1" ${dayIndex === 0 ? "disabled" : ""}>Up</button>
           <button class="move-day" type="button" data-day-index="${dayIndex}" data-direction="1" ${dayIndex === days.length - 1 ? "disabled" : ""}>Down</button>
           <button class="delete-day" type="button" data-day-index="${dayIndex}">Delete</button>
@@ -417,6 +425,7 @@ function renderDays() {
   $$("[data-done]").forEach((box) => {
     box.addEventListener("change", () => {
       localStorage.setItem(`fit.done.${box.dataset.done}`, box.checked ? "1" : "0");
+      renderTargetDashboard();
     });
   });
 
@@ -613,6 +622,25 @@ function toggleDay(card, key) {
 }
 
 function bindPlanEditingControls() {
+  $$(".edit-day").forEach((button) => {
+    button.addEventListener("click", () => {
+      const days = ensureEditableWeek();
+      const day = days[Number(button.dataset.dayIndex)];
+      if (!day) return;
+      const title = prompt("Workout name?", day.title);
+      if (!title) return;
+      const duration = prompt("Estimated duration in minutes?", String(day.duration || 60));
+      const focus = prompt("Workout purpose or notes?", day.focus) || day.focus;
+      const targetText = prompt(`Weekly targets covered? Separate with commas.\nAvailable: ${Object.keys(WEEKLY_TARGETS).join(", ")}`, targetsForDay(day).join(", "));
+      day.title = title;
+      day.focus = focus;
+      day.duration = Math.max(0, Number(duration) || 0);
+      if (targetText !== null) day.targetsOverride = splitPromptList(targetText).filter((key) => WEEKLY_TARGETS[key]);
+      saveEditableWeek(days);
+      render();
+    });
+  });
+
   $("#addDayBtn")?.addEventListener("click", () => {
     const days = ensureEditableWeek();
     const title = prompt("Day title?", "Custom Workout Day");
@@ -698,6 +726,64 @@ function bindPlanEditingControls() {
   });
 }
 
+function targetsForDay(day) {
+  if (Array.isArray(day.targetsOverride)) return day.targetsOverride;
+  const segmentTargets = (day.segments || []).flatMap((segment) => segment.targets || []);
+  const structural = day.type === "r" ? ["rest"] : [];
+  return Array.from(new Set([...segmentTargets, ...structural]));
+}
+
+function targetCounts(days) {
+  const planned = {};
+  const completed = {};
+  Object.keys(WEEKLY_TARGETS).forEach((key) => { planned[key] = 0; completed[key] = 0; });
+  days.forEach((day, dayIndex) => {
+    const targets = targetsForDay(day);
+    const dayKey = `w${state.week}.${PLAN_KEY}.${day.id || `d${dayIndex}`}`;
+    const isDone = localStorage.getItem(`fit.done.${dayKey}`) === "1";
+    targets.forEach((target) => {
+      planned[target] = (planned[target] || 0) + 1;
+      if (isDone) completed[target] = (completed[target] || 0) + 1;
+    });
+  });
+  return { planned, completed };
+}
+
+function targetStatus(value, planned, target) {
+  if (value > target.max || planned > target.max) return { label: "Exceeded", className: "exceeded" };
+  if (value >= target.min) return { label: "Complete", className: "complete" };
+  if (planned >= target.min) return { label: "On track", className: "on-track" };
+  if (planned === 0) return { label: "Missing", className: "missing" };
+  return { label: "At risk", className: "at-risk" };
+}
+
+function renderTargetDashboard() {
+  const grid = $("#targetGrid");
+  if (!grid || typeof WEEKLY_TARGETS === "undefined") return;
+  const days = buildWeek(state.week);
+  const counts = targetCounts(days);
+  const priority = ["glute","upper","olympic","jump","sprint","core","intentionalCore","anaerobic","zone2","carry","rest"];
+  grid.innerHTML = priority.map((key) => {
+    const target = WEEKLY_TARGETS[key];
+    const status = targetStatus(counts.completed[key], counts.planned[key], target);
+    const goal = target.min === target.max ? String(target.min) : `${target.min}-${target.max}`;
+    return `<article class="target-card ${status.className}">
+      <div><span>${escapeHtml(target.label)}</span><b>${counts.completed[key]} of ${goal}</b></div>
+      <small>${status.label} · ${counts.planned[key]} planned</small>
+    </article>`;
+  }).join("");
+  const missing = priority.filter((key) => counts.planned[key] < WEEKLY_TARGETS[key].min);
+  const excessive = priority.filter((key) => counts.planned[key] > WEEKLY_TARGETS[key].max);
+  const summary = $("#targetSummary");
+  if (summary) summary.textContent = `${priority.length - missing.length} of ${priority.length} objectives covered`;
+  const advice = $("#targetAdvice");
+  if (advice) {
+    if (excessive.includes("anaerobic")) advice.textContent = "Anaerobic work is above the useful weekly range. Remove optional conditioning before adding more intensity.";
+    else if (missing.length) advice.textContent = `Plan gap: ${missing.map((key) => WEEKLY_TARGETS[key].label).join(", ")}. Add or restore purpose-matched work; the week is not marked failed.`;
+    else advice.textContent = "The current layout covers every priority target. Moving sessions changes recovery order, not target coverage.";
+  }
+}
+
 function promptForSegment(kind, index) {
   const id = `custom-seg-${Date.now()}-${index}`;
   const num = String(index + 1);
@@ -707,31 +793,43 @@ function promptForSegment(kind, index) {
     const moves = prompt("Cardio details? Separate lines with commas.", "Incline walk, bike, StairMaster, or row") || "";
     const options = prompt("Options/swaps? Separate with commas.", "Incline walk, bike, StairMaster, row") || "";
     const goal = prompt("Cardio goal?", "Keep this matched to the day.") || "Keep this matched to the day.";
-    return cardioSeg(num, "Cardio", {
+    const result = cardioSeg(num, "Cardio", {
       format,
       target: format.match(/\d/) ? `Cardio target: ${format}` : "Cardio target: custom",
       moves: splitPromptList(moves),
       options: splitPromptList(options),
       goal
     }, id);
+    result.targets = askTargets(format.toLowerCase().includes("zone 2") ? ["zone2"] : ["anaerobic"]);
+    return result;
   }
   if (kind === "lift") {
     const movement = prompt("Lift name?", "Back squat");
     if (!movement) return null;
     const prescription = prompt("Sets/reps/progression?", "4x6 @ RPE 7") || "3x8-10";
     const goal = prompt("Lift goal?", "Log weight and reps. Keep clean form.") || "Log weight and reps. Keep clean form.";
-    return liftSeg(num, "Lift", movement, prescription, null, goal, id);
+    const result = liftSeg(num, "Lift", movement, prescription, null, goal, id);
+    result.targets = askTargets([]);
+    return result;
   }
   if (kind === "list") {
     const name = prompt("Section name?", "Accessories") || "Accessories";
     const items = prompt("Exercises? Separate with commas.", "3x10 exercise one, 3x12 exercise two");
     if (!items) return null;
-    return listSeg(num, name, splitPromptList(items), id);
+    const result = listSeg(num, name, splitPromptList(items), id);
+    result.targets = askTargets([]);
+    return result;
   }
   const name = prompt("Note section name?", "Notes") || "Notes";
   const text = prompt("Notes?", "Add workout notes here.");
   if (!text) return null;
   return textSeg(num, name, text, id);
+}
+
+function askTargets(suggested = []) {
+  const answer = prompt(`Which weekly targets does this preserve? Separate with commas.\nAvailable: ${Object.keys(WEEKLY_TARGETS).join(", ")}`, suggested.join(", "));
+  if (answer === null) return suggested;
+  return splitPromptList(answer).filter((key) => WEEKLY_TARGETS[key]);
 }
 
 function splitPromptList(value) {

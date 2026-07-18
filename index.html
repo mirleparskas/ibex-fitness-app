@@ -3,25 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cardio-First Glute Recomp App</title>
+  <title>Ibex Athletic Training</title>
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
   <main class="wrap">
     <header class="hero">
       <div>
-        <p class="kicker">8 Weeks / Editable / Cardio First / Glutes / CrossFit</p>
-        <h1>Cardio-First Glute Recomp</h1>
+        <p class="kicker">8 Weeks / Flexible Calendar / Strength / Speed / Glutes</p>
+        <h1>Ibex Athletic Training</h1>
         <p class="sub">
-          A flexible week built around cardio first, 4 core lifting days, one optional
-          pump lift, and recovery cardio. Move, delete, or add days and build custom
-          workouts with cardio, lifts, accessories, and notes.
+          Build glutes, strength, speed, jumping ability, and conditioning without
+          being trapped by fixed weekdays. Move or edit sessions while weekly targets
+          keep the purpose of the program visible.
         </p>
       </div>
       <div class="stats" aria-label="Program summary">
-        <span><b>7</b> cardio days</span>
-        <span><b>4-5</b> lift days</span>
-        <span><b>3</b> glute hits</span>
+        <span><b>3</b> glute exposures</span>
+        <span><b>2</b> power exposures</span>
+        <span><b>3</b> core exposures</span>
       </div>
     </header>
 
@@ -44,21 +44,33 @@
 
     <section id="blockBanner" class="block-banner" aria-live="polite"></section>
 
+    <section class="target-dashboard" aria-labelledby="targetTitle">
+      <div class="dashboard-heading">
+        <div>
+          <p class="kicker">Flexible calendar · fixed objectives</p>
+          <h2 id="targetTitle">Weekly Targets</h2>
+        </div>
+        <div class="dashboard-legend"><span>Planned</span><b id="targetSummary">Checking week…</b></div>
+      </div>
+      <div id="targetGrid" class="target-grid"></div>
+      <div id="targetAdvice" class="target-advice" aria-live="polite"></div>
+    </section>
+
     <section class="program-notes" aria-label="Program notes">
       <div>
         <h2>How The Plan Progresses</h2>
         <p>
-          Weeks 1-3 rebuild volume and clean reps. Week 4 changes the stimulus and
-          lowers load. Weeks 5-7 build load, reps, and density. Week 8 retests
-          repeatable conditioning, Olympic technique, and controlled strength.
+          Weeks 1-2 establish baselines at roughly 3 RIR. Weeks 3-4 load at roughly
+          2 RIR. Weeks 5-7 progress productive work at 1-2 RIR. Week 8 deloads sets,
+          sprint volume, jumps, and conditioning while preserving movement skill.
         </p>
       </div>
       <div>
         <h2>Weekly Structure</h2>
         <p>
-          Default layout: Monday lower/glutes, Tuesday upper push, Wednesday recovery
-          cardio, Thursday Olympic technique and upper pull, Friday posterior/glutes,
-          Saturday optional full-body pump, and Sunday recovery cardio.
+          The seven sessions begin in a sensible recovery order, but they are not
+          weekdays. Move them freely. Weekly objectives and recovery warnings show
+          what each change preserves, removes, or overloads.
         </p>
       </div>
     </section>
@@ -79,6 +91,7 @@
   </main>
 
   <script src="workouts.js"></script>
+  <script src="athletic-data.js"></script>
   <script src="exercise-options.js"></script>
   <script src="app.js"></script>
 </body>

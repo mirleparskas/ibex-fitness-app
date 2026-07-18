@@ -1,4 +1,13 @@
-# Cardio-First Glute Recomp App
+# Ibex Athletic Training App
+
+An editable eight-week athletic training block for glute development, upper-body
+strength and hypertrophy, sprinting, jumping, Olympic-lifting skill, core work,
+conditioning, and cardiovascular health.
+
+The weekly dashboard separates completed exposures from planned coverage. Moving a
+session preserves its targets; deleting purpose-matched work exposes the resulting
+gap. The default plan uses Foundation (Weeks 1-2), Loading (Weeks 3-4), Progression
+(Weeks 5-7), and Deload (Week 8) phases.
 
 Open `index.html` directly in a browser, or run a simple local server from this folder.
 
