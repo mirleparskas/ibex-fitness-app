@@ -303,6 +303,29 @@ button:hover {
 .day-targets { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
 .day-targets span { padding: 2px 6px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted2); font-size: 8px; font-weight: 800; text-transform: uppercase; }
 
+.class-log,
+.wod-intensity {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel2);
+}
+
+.class-attended { display: flex; gap: 8px; align-items: center; margin: 10px 0; color: var(--txt); font-weight: 800; }
+.class-attended input { width: auto; }
+.class-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.class-grid span,
+.wod-intensity label span { display: block; margin-bottom: 4px; color: var(--muted2); font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.class-status { margin: 10px 0 0; color: var(--muted); font-size: 11px; font-weight: 800; }
+.class-status.hard { color: var(--accent); }
+.class-status.controlled { color: var(--green); }
+.wod-intensity { margin-bottom: 12px; border-color: rgba(86, 182, 255, .45); }
+.wod-intensity > div { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.wod-intensity > div b { color: var(--blue); }
+.wod-intensity > div span { color: var(--muted); font-size: 11px; }
+.wod-intensity p { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.wod-intensity strong { color: var(--gold); text-transform: capitalize; }
+
 .program-notes > div {
   padding: 14px 16px;
   border: 1px solid var(--line);
@@ -940,6 +963,8 @@ code {
 @media (max-width: 720px) {
   .target-grid { grid-template-columns: 1fr 1fr; }
   .dashboard-heading { align-items: flex-start; }
+  .class-grid { grid-template-columns: 1fr 1fr; }
+  .wod-intensity > div { display: grid; }
   .hero {
     grid-template-columns: 1fr;
   }

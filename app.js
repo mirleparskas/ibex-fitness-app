@@ -276,6 +276,20 @@ function normalizeSegment(segment, index = 0) {
       }
     };
   }
+  if (kind === "metcon") {
+    return {
+      ...base,
+      intensityAware: Boolean(segment.intensityAware),
+      metcon: {
+        format: segment.metcon?.format || "12 min AMRAP",
+        moves: Array.isArray(segment.metcon?.moves) ? segment.metcon.moves : ["Add workout movements"],
+        tiers: segment.metcon?.tiers && typeof segment.metcon.tiers === "object" ? segment.metcon.tiers : { L1: "Scaled", L2: "As written", L3: "Advanced" },
+        cap: segment.metcon?.cap || "12 minutes",
+        goal: segment.metcon?.goal || "Move with purpose and sustainable technique."
+      }
+    };
+  }
+  if (kind === "class") return { ...base, text: segment.text || "Log the class demands after attending." };
   if (kind === "lift") {
     return {
       ...base,
@@ -299,8 +313,42 @@ function normalizeSegment(segment, index = 0) {
 
 function getEditableWeek(weekIndex) {
   const saved = readJson(customPlanKey(weekIndex), null);
-  if (Array.isArray(saved)) return saved.map(normalizeDay);
+  if (Array.isArray(saved)) return migrateSavedWeek(saved, weekIndex).map(normalizeDay);
   return buildDefaultWeek(weekIndex).map(normalizeDay);
+}
+
+function migrateSavedWeek(saved, weekIndex) {
+  const versionKey = `fit.template.version.${PLAN_KEY}.w${weekIndex}`;
+  if (Number(localStorage.getItem(versionKey) || 0) >= (typeof ATHLETIC_TEMPLATE_VERSION === "number" ? ATHLETIC_TEMPLATE_VERSION : 1)) return saved;
+  const defaults = buildDefaultWeek(weekIndex);
+  const migrated = saved.map((day) => {
+    const template = defaults.find((candidate) => candidate.id === day.id);
+    if (!template) return day;
+    const segments = Array.isArray(day.segments) ? [...day.segments] : [];
+    const templateById = Object.fromEntries(template.segments.map((segment) => [segment.id, segment]));
+    if (day.id === "lower-power") {
+      if (!segments.some((segment) => segment.id === "power-emom")) segments.splice(1, 0, templateById["power-emom"]);
+      ["power-clean", "box-jump"].forEach((id) => {
+        const index = segments.findIndex((segment) => segment.id === id);
+        if (index >= 0) segments[index] = { ...segments[index], name: templateById[id].name, prescription: templateById[id].prescription };
+      });
+    }
+    if (day.id === "upper-class" || day.id === "short-glute-class") {
+      const index = segments.findIndex((segment) => segment.id === "class");
+      if (index >= 0) segments[index] = templateById.class;
+    }
+    if (day.id === "full-athletic") {
+      const oldIndex = segments.findIndex((segment) => segment.id === "optional-conditioning");
+      const newIndex = segments.findIndex((segment) => segment.id === "crossfit-wod");
+      if (newIndex < 0 && oldIndex >= 0) segments.splice(oldIndex, 1, templateById["crossfit-wod"]);
+      if (newIndex < 0 && oldIndex < 0) segments.push(templateById["crossfit-wod"]);
+    }
+    return { ...day, segments };
+  });
+  storageSetItem.call(localStorage, versionKey, String(typeof ATHLETIC_TEMPLATE_VERSION === "number" ? ATHLETIC_TEMPLATE_VERSION : 1));
+  storageSetItem.call(localStorage, customPlanKey(weekIndex), JSON.stringify(migrated));
+  scheduleProgressSync();
+  return migrated;
 }
 
 function saveEditableWeek(days, weekIndex = state.week) {
@@ -323,6 +371,8 @@ function labelForSegmentKind(kind) {
   if (kind === "cardio") return "Cardio";
   if (kind === "lift") return "Lift";
   if (kind === "list") return "Exercises";
+  if (kind === "metcon") return "CrossFit-Style WOD";
+  if (kind === "class") return "Group Class";
   return "Notes";
 }
 
@@ -426,6 +476,7 @@ function renderDays() {
     box.addEventListener("change", () => {
       localStorage.setItem(`fit.done.${box.dataset.done}`, box.checked ? "1" : "0");
       renderTargetDashboard();
+      updateWodRecommendationPanels();
     });
   });
 
@@ -476,6 +527,27 @@ function renderDays() {
     });
   });
 
+  $$(".class-input").forEach((input) => {
+    input.addEventListener("input", () => {
+      const current = readClassEntry(input.dataset.key);
+      current[input.dataset.field] = input.type === "checkbox" ? input.checked : input.value;
+      current.updatedAt = new Date().toISOString();
+      writeJson(`fit.class.${input.dataset.key}`, current);
+    });
+    input.addEventListener("change", () => {
+      renderTargetDashboard();
+      updateWodRecommendationPanels();
+    });
+  });
+
+  $$(".wod-mode").forEach((select) => {
+    select.addEventListener("change", () => {
+      localStorage.setItem(`fit.wodmode.${select.dataset.key}`, select.value);
+      renderTargetDashboard();
+      updateWodRecommendationPanels();
+    });
+  });
+
   $$(".extra-name").forEach((input) => {
     input.addEventListener("input", () => {
       const extras = readExtras(input.dataset.dayKey);
@@ -485,6 +557,14 @@ function renderDays() {
       writeExtras(input.dataset.dayKey, extras);
     });
     input.addEventListener("change", () => {
+      if (isProhibitedMovement(input.value)) {
+        alert("Snatches and handstand push-ups are excluded from this program. Choose a clean, jerk, press, row, or other purpose-matched movement.");
+        const extras = readExtras(input.dataset.dayKey);
+        const item = extras[Number(input.dataset.extraIndex)];
+        if (item) item.name = "";
+        writeExtras(input.dataset.dayKey, extras);
+        input.value = "";
+      }
       captureOpenDays();
       renderDays();
       applySearch();
@@ -746,6 +826,8 @@ function targetCounts(days) {
       if (isDone) completed[target] = (completed[target] || 0) + 1;
     });
   });
+  completed.anaerobic = currentHardExposureCount(days);
+  planned.anaerobic = Math.max(WEEKLY_TARGETS.anaerobic.min, completed.anaerobic);
   return { planned, completed };
 }
 
@@ -806,6 +888,10 @@ function promptForSegment(kind, index) {
   if (kind === "lift") {
     const movement = prompt("Lift name?", "Back squat");
     if (!movement) return null;
+    if (isProhibitedMovement(movement)) {
+      alert("Snatches and handstand push-ups are excluded from this program.");
+      return null;
+    }
     const prescription = prompt("Sets/reps/progression?", "4x6 @ RPE 7") || "3x8-10";
     const goal = prompt("Lift goal?", "Log weight and reps. Keep clean form.") || "Log weight and reps. Keep clean form.";
     const result = liftSeg(num, "Lift", movement, prescription, null, goal, id);
@@ -910,11 +996,15 @@ function renderSegment(segment, key, dayIndex, segIndex, segmentCount) {
     body = `<div class="tracked-list">${segment.items.map((item, itemIndex) => renderListItem(item, key, dayIndex, segIndex, itemIndex)).join("")}</div>`;
   }
 
+  if (segment.kind === "class") body = renderClassLog(key, segment.text);
+
   if (segment.kind === "metcon") {
     const selected = localStorage.getItem(`fit.tier.${key}`) || "L2";
     const mc = segment.metcon;
+    const intensityPanel = segment.intensityAware ? renderWodIntensityPanel(key) : "";
     body = `
       <div class="metcon">
+        ${intensityPanel}
         <div class="metcon-title">${escapeHtml(mc.format)}</div>
         <div class="metcon-block">${mc.moves.map((move, moveIndex) => renderMetconMove(move, key, dayIndex, segIndex, moveIndex)).join("")}</div>
         <div class="tiers">
@@ -954,6 +1044,96 @@ function renderSegment(segment, key, dayIndex, segIndex, segmentCount) {
       ${body}
     </section>
   `;
+}
+
+function readClassEntry(key) {
+  const saved = readJson(`fit.class.${key}`, {});
+  return {
+    completed: Boolean(saved.completed),
+    name: saved.name || "",
+    duration: saved.duration || "",
+    intensity: saved.intensity || "",
+    anaerobic: saved.anaerobic || "",
+    fatigue: saved.fatigue || "",
+    notes: saved.notes || "",
+    updatedAt: saved.updatedAt || ""
+  };
+}
+
+function isHardClass(entry) {
+  return Boolean(entry.completed) && Number(entry.intensity) >= 7 && Number(entry.anaerobic) >= 6;
+}
+
+function renderClassLog(key, description) {
+  const saved = readClassEntry(key);
+  return `<div class="class-log">
+    <p class="plain">${escapeHtml(description)}</p>
+    <label class="class-attended"><input class="class-input" type="checkbox" data-key="${escapeAttr(key)}" data-field="completed" ${saved.completed ? "checked" : ""}> Class attended</label>
+    <div class="class-grid">
+      <label><span>Class name</span><input class="class-input" data-key="${escapeAttr(key)}" data-field="name" value="${escapeAttr(saved.name)}" placeholder="CrossFit, conditioning…"></label>
+      <label><span>Duration (min)</span><input class="class-input" type="number" min="0" max="180" data-key="${escapeAttr(key)}" data-field="duration" value="${escapeAttr(saved.duration)}"></label>
+      <label><span>Overall intensity 1–10</span><input class="class-input" type="number" min="1" max="10" data-key="${escapeAttr(key)}" data-field="intensity" value="${escapeAttr(saved.intensity)}"></label>
+      <label><span>Anaerobic demand 1–10</span><input class="class-input" type="number" min="1" max="10" data-key="${escapeAttr(key)}" data-field="anaerobic" value="${escapeAttr(saved.anaerobic)}"></label>
+      <label><span>Overall fatigue 1–10</span><input class="class-input" type="number" min="1" max="10" data-key="${escapeAttr(key)}" data-field="fatigue" value="${escapeAttr(saved.fatigue)}"></label>
+      <label><span>Exercises / notes</span><input class="class-input" data-key="${escapeAttr(key)}" data-field="notes" value="${escapeAttr(saved.notes)}" placeholder="Movements, scaling, soreness…"></label>
+    </div>
+    <p class="class-status ${isHardClass(saved) ? "hard" : "controlled"}">${saved.completed ? (isHardClass(saved) ? "Counts as one hard anaerobic exposure." : "Logged, but does not meet the hard-exposure threshold.") : "Not counted until attended."}</p>
+  </div>`;
+}
+
+function currentHardExposureCount(days = buildWeek(state.week), excludeWod = false) {
+  let count = 0;
+  days.forEach((day, dayIndex) => {
+    const dayKey = `w${state.week}.${PLAN_KEY}.${day.id || `d${dayIndex}`}`;
+    if (day.id === "sprint-glute" && localStorage.getItem(`fit.done.${dayKey}`) === "1") count += 1;
+    (day.segments || []).filter((segment) => segment.kind === "class").forEach((segment) => {
+      if (isHardClass(readClassEntry(`${dayKey}.${segment.id}`))) count += 1;
+    });
+    if (!excludeWod && day.id === "full-athletic" && localStorage.getItem(`fit.done.${dayKey}`) === "1") {
+      const wodKey = `${dayKey}.crossfit-wod`;
+      if ((localStorage.getItem(`fit.wodmode.${wodKey}`) || recommendedWodMode(days)) === "hard") count += 1;
+    }
+  });
+  return count;
+}
+
+function recommendedWodMode(days = buildWeek(state.week)) {
+  const hard = currentHardExposureCount(days, true);
+  if (hard <= 1) return "hard";
+  if (hard === 2) return "controlled";
+  return "aerobic";
+}
+
+function renderWodIntensityPanel(key) {
+  const recommended = recommendedWodMode();
+  const selected = localStorage.getItem(`fit.wodmode.${key}`) || recommended;
+  const copy = {
+    hard: "Full WOD as written. This counts as a hard anaerobic exposure.",
+    controlled: "Reduce time, rounds, or repetitions by about 20%; cap effort at RPE 7.",
+    aerobic: "Use L1 movements, remove repetitive jumping, and cap effort at RPE 6. This does not count as hard."
+  };
+  return `<div class="wod-intensity" data-wod-panel="${escapeAttr(key)}">
+    <div><b>Intensity budget</b><span>${currentHardExposureCount(buildWeek(state.week), true)} hard exposures completed before this WOD</span></div>
+    <label><span>Workout version</span><select class="wod-mode" data-key="${escapeAttr(key)}">
+      <option value="hard" ${selected === "hard" ? "selected" : ""}>Full / hard</option>
+      <option value="controlled" ${selected === "controlled" ? "selected" : ""}>Controlled</option>
+      <option value="aerobic" ${selected === "aerobic" ? "selected" : ""}>Technique / aerobic</option>
+    </select></label>
+    <p><strong>Recommended: ${recommended}.</strong> ${copy[selected]}</p>
+  </div>`;
+}
+
+function updateWodRecommendationPanels() {
+  $$('[data-wod-panel]').forEach((panel) => {
+    const replacement = document.createElement("div");
+    replacement.innerHTML = renderWodIntensityPanel(panel.dataset.wodPanel);
+    panel.replaceWith(replacement.firstElementChild);
+  });
+  $$(".wod-mode").forEach((select) => select.addEventListener("change", () => {
+    localStorage.setItem(`fit.wodmode.${select.dataset.key}`, select.value);
+    renderTargetDashboard();
+    updateWodRecommendationPanels();
+  }));
 }
 
 function renderCardioOptions(cardio) {
@@ -1243,7 +1423,12 @@ function categoryForMovement(movement) {
 function optionsForCategory(category, original) {
   const database = typeof EXERCISE_OPTIONS === "undefined" ? {} : EXERCISE_OPTIONS;
   const options = database[category] || [];
-  return [original, ...options].filter((item, index, list) => item && list.indexOf(item) === index);
+  return [original, ...options].filter((item, index, list) => item && !isProhibitedMovement(item) && list.indexOf(item) === index);
+}
+
+function isProhibitedMovement(movement) {
+  const patterns = typeof PROHIBITED_MOVEMENT_PATTERNS === "undefined" ? [] : PROHIBITED_MOVEMENT_PATTERNS;
+  return patterns.some((pattern) => pattern.test(String(movement || "")));
 }
 
 function labelForCategory(category) {

@@ -68,8 +68,8 @@ const PROGRAM = {
     wednesdayChipper: {
       format: "25-30 min chipper, controlled pace",
       target: "Cardio target: 25-30 minutes",
-      moves: ["50 wall balls", "40 sit-ups", "30 box step-overs", "25 cal row", "20 DB snatches", "15 burpees", "25 cal bike", "30 kettlebell swings", "40 walking lunges", "50 double unders or 100 single unders"],
-      options: ["Goblet squats instead of wall balls", "DB step-overs instead of box step-overs", "KB swings instead of DB snatches", "Single unders instead of double unders"],
+      moves: ["50 wall balls", "40 sit-ups", "30 box step-overs", "25 cal row", "20 alternating DB clean and jerks", "15 burpees", "25 cal bike", "30 kettlebell swings", "40 walking lunges", "50 double unders or 100 single unders"],
+      options: ["Goblet squats instead of wall balls", "DB step-overs instead of box step-overs", "KB swings instead of DB clean and jerks", "Single unders instead of double unders"],
       goal: "This is the cardio for the day. Olympic lifting after stays light and technical."
     },
     thursdayZone2: {
