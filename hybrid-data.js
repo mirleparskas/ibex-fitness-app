@@ -1,5 +1,5 @@
 const HYBRID_START_DATE = "2026-07-21";
-const HYBRID_TEMPLATE_VERSION = 2;
+const HYBRID_TEMPLATE_VERSION = 3;
 
 Object.assign(WEEKLY_TARGETS, {
   lower: { label: "Lower sessions", min: 2, max: 2 },
@@ -145,6 +145,33 @@ function hybridRx(week, base) {
   ][week];
 }
 
+const CLEAN_PROGRESSION = {
+  technique: [
+    "Power clean - 5x3 @ 60% clean training max",
+    "Power clean - 5x3 @ 65% clean training max",
+    "Power clean - 6x2 @ 70% clean training max",
+    "Power clean - 4x2 @ 60-65% (recovery week)",
+    "Power clean - 5x2 @ 72-75% clean training max",
+    "Power clean - 6x1 @ 77-80% clean training max",
+    "Power clean - 5-6x1 @ 80-85%; stop before a miss",
+    "Power clean - 4x2 @ 55-60% (deload)"
+  ],
+  integration: [
+    "Clean + front squat + power jerk - 4 sets of 1+1+1 @ 60%",
+    "Hang clean + power jerk - 5 sets of 2+1 @ 65%",
+    "Clean + power jerk - 5 sets of 1+1 @ 70%",
+    "Clean + power jerk - 4 sets of 1+1 @ 60-65% (recovery week)",
+    "Clean + front squat + power jerk - 5 sets of 1+1+1 @ 72-75%",
+    "Clean + power jerk - 6x1 @ 77-82%",
+    "Clean + power jerk - 5-7 technical singles @ 80-88%; no misses",
+    "Clean + power jerk - 4x1 @ 60-65% (deload)"
+  ]
+};
+
+function cleanProgression(kind, week) {
+  return CLEAN_PROGRESSION[kind][week] + " · Use a conservative training max; reduce 5-10% if positions or speed break down.";
+}
+
 function hybridMetcon(id, name, source, week, targets = ["metcon"], options = {}) {
   const [format, moves, goal] = source[week];
   return { kind:"metcon", num:"WOD", name, id, targets, intensityAware:true, defaultMode:options.mode || "controlled", optional:Boolean(options.optional), metcon:{ format, moves, cap:goal, goal, tiers:{ L1:"Reduce repetitions 20-30% and use low-impact options", L2:"Complete as written at the intended effort", L3:"Increase pace only while movement quality stays high" } } };
@@ -158,10 +185,11 @@ function buildHybridWeek(week) {
   const day = (id, tag, title, focus, targets, segments, type="c") => ({ id, tag, title, focus, duration:85, targets, type, segments });
   const text = (num,name,value,id,targets=[]) => ({kind:"text",num,name,text:value,id,targets});
   const lift = (num,name,movement,rx,id,targets=[]) => ({kind:"lift",num,name,movement,prescription:hybridRx(week,rx),id,targets,goal:"Progress only when the top of the range is completed with the target RIR and clean technique."});
+  const cleanLift = (num,name,movement,kind,id) => ({kind:"lift",num,name,movement,prescription:cleanProgression(kind,week),id,targets:["olympic"],goal:"Make every repetition technically sound. Percentages are based on a conservative clean training max, not a daily maximum."});
   const list = (num,name,items,id,targets=[]) => ({kind:"list",num,name,items,id,targets});
   return [
     day("hybrid-lower-a","D1","Lower A · Squat + Glutes","Knee-dominant strength, glute growth, clean technique and vertical power.",["lower","glute","olympic","jump","squat","physio","core","metcon"],[
-      text("WU","Preparation","8-10 min hips, ankles, glutes and clean positions.","warmup"), lift("1","Olympic Skill","Power clean","6x2 technical","power-clean",["olympic"]), lift("2","Jump","Box jump","4x3 quality","box-jump",["jump"]), lift("3","Main Strength","Front squat","4x5-8","front-squat",["squat"]), lift("4","Glute Strength","Barbell hip thrust","4x6-10","hip-thrust",["glute"]), list("5","Weekly Bodybuilding Rotation",hybridAccessories("lowerA",week),"lower-a-accessories",["glute","unilateral","core"]), list("P","Physio A",["3x8-15 seated leg curl","2-3 sets standing eccentric calf raise","2-3 sets reverse curl with pelvic tilt"],"physio-a",["physio"]), hybridMetcon("lower-a-wod","Controlled Finisher",HYBRID_FINISHERS.lowerA,week,["metcon"],{mode:"controlled"}), hybridClass()
+      text("WU","Preparation","8-10 min hips, ankles, glutes and clean positions.","warmup"), cleanLift("1","Clean Progression A · Speed + Turnover","Power clean","technique","power-clean"), lift("2","Jump","Box jump","4x3 quality","box-jump",["jump"]), lift("3","Main Strength","Front squat","4x5-8","front-squat",["squat"]), lift("4","Glute Strength","Barbell hip thrust","4x6-10","hip-thrust",["glute"]), list("5","Weekly Bodybuilding Rotation",hybridAccessories("lowerA",week),"lower-a-accessories",["glute","unilateral","core"]), list("P","Physio A",["3x8-15 seated leg curl","2-3 sets standing eccentric calf raise","2-3 sets reverse curl with pelvic tilt"],"physio-a",["physio"]), hybridMetcon("lower-a-wod","Controlled Finisher",HYBRID_FINISHERS.lowerA,week,["metcon"],{mode:"controlled"}), hybridClass()
     ],"g"),
     day("hybrid-upper-a","D2","Upper A · Horizontal Push/Pull","Chest and back strength, strict pushing skill, shoulders and arms.",["upperSplit","back","shoulders","arms","gymnastics","metcon"],[
       text("WU","Preparation","8 min shoulders, T-spine and scapular control.","warmup"), lift("1","Explosive Primer","Medicine-ball chest throw","4x4","medball"), lift("2","Main Push","Dumbbell bench press","4x5-8","bench"), lift("3","Main Pull","Chest-supported row","4x6-10","chest-row",["back"]), lift("4","Strict Gymnastics","Strict push-up or dip progression","4 quality sets","strict-push",["gymnastics"]), list("5","Weekly Bodybuilding Rotation",hybridAccessories("upperA",week),"upper-a-accessories",["shoulders","arms"]), hybridMetcon("upper-a-wod","Hard Finisher",HYBRID_FINISHERS.upperA,week,["metcon","anaerobic"],{mode:"hard"}), hybridClass()
@@ -170,7 +198,7 @@ function buildHybridWeek(week) {
       text("WU","Movement Preparation","10 min easy machine, mobility and movement rehearsal.","warmup"), {kind:"choice",num:"A/B",name:"Choose Conditioning Format",id:"conditioning-choice",targets:[]}, {kind:"cardio",num:"A",name:"Choice A · True Zone 2",id:"zone2-choice",targets:["zone2"],cardio:{format:"45-60 min Zone 2",target:"Conversational effort, approximately 5-6/10",moves:["Bike, row, incline walk, SkiErg, StairMaster or an easy combination"],options:["Change machines every 10-15 minutes"],goal:"Build aerobic capacity without adding a hard day."}}, hybridMetcon("long-conditioning","Choice B · Long EMOM / AMRAP",LONG_CONDITIONING,week,["fullBody"],{mode:"aerobic"}), list("C","Carry + Core",["3x30-40 m farmer or suitcase carry","3x8-12 controlled trunk exercise"],"conditioning-accessories",["carry","core"]), list("P","Optional Physio C",["2-3 sets standing leg curl","2-3 sets supported hanging knee to chest","2-3 sets isometric 45-degree weighted back extension"],"physio-c",[]), hybridClass()
     ]),
     day("hybrid-lower-b","D4","Lower B · Hinge + Unilateral","Posterior-chain strength, clean and jerk skill, horizontal power and speed.",["lower","glute","olympic","jump","sprint","hinge","physio","core","metcon"],[
-      text("WU","Sprint + Lift Preparation","10 min sprint drills, posterior-chain activation and clean positions.","warmup"), lift("1","Olympic Skill","Hang power clean and jerk","5x2 technical","hang-clean-jerk",["olympic"]), lift("2","Jump","Broad jump","4x3 quality","broad-jump",["jump"]), lift("3","Speed","Acceleration sprint","6x15-25 m, full recovery","sprint",["sprint","anaerobic"]), lift("4","Main Hinge","Romanian deadlift","4x6-10","rdl",["hinge","glute"]), lift("5","Main Unilateral","Reverse lunge","3x6-10/side","reverse-lunge",["unilateral","glute"]), list("6","Weekly Bodybuilding Rotation",hybridAccessories("lowerB",week),"lower-b-accessories",["glute","hamstrings","core"]), list("P","Physio B",["3x10 45-degree back extension","2-3 sets single calf raise on machine","2-3 sets to fatigue side-lying hip horizontal abduction"],"physio-b",["physio"]), hybridMetcon("lower-b-wod","Controlled Finisher",HYBRID_FINISHERS.lowerB,week,["metcon"],{mode:"controlled"}), hybridClass()
+      text("WU","Sprint + Lift Preparation","10 min sprint drills, posterior-chain activation and clean positions.","warmup"), cleanLift("1","Clean Progression B · Clean + Jerk","Clean and power jerk","integration","hang-clean-jerk"), lift("2","Jump","Broad jump","4x3 quality","broad-jump",["jump"]), lift("3","Speed","Acceleration sprint","6x15-25 m, full recovery","sprint",["sprint","anaerobic"]), lift("4","Main Hinge","Romanian deadlift","4x6-10","rdl",["hinge","glute"]), lift("5","Main Unilateral","Reverse lunge","3x6-10/side","reverse-lunge",["unilateral","glute"]), list("6","Weekly Bodybuilding Rotation",hybridAccessories("lowerB",week),"lower-b-accessories",["glute","hamstrings","core"]), list("P","Physio B",["3x10 45-degree back extension","2-3 sets single calf raise on machine","2-3 sets to fatigue side-lying hip horizontal abduction"],"physio-b",["physio"]), hybridMetcon("lower-b-wod","Controlled Finisher",HYBRID_FINISHERS.lowerB,week,["metcon"],{mode:"controlled"}), hybridClass()
     ],"g"),
     day("hybrid-upper-b","D5","Upper B · Vertical Push/Pull","Shoulder strength, strict pulling, upper-back development and arms.",["upperSplit","back","shoulders","arms","gymnastics","metcon"],[
       text("WU","Preparation","8 min shoulders, lats, T-spine and scapular control.","warmup"), lift("1","Main Push/Jerk","Push press + power jerk","5x3-6","press",["shoulders"]), lift("2","Strict Gymnastics","Strict pull-up progression","4 quality sets","strict-pull",["gymnastics","back"]), lift("3","Vertical Pull","Lat pulldown","3x8-12","pulldown",["back"]), list("4","Weekly Bodybuilding Rotation",hybridAccessories("upperB",week),"upper-b-accessories",["back","shoulders","arms"]), hybridMetcon("upper-b-wod","Hard Finisher",HYBRID_FINISHERS.upperB,week,["metcon","anaerobic"],{mode:"hard"}), hybridClass()
