@@ -9,7 +9,7 @@ session preserves its targets; deleting purpose-matched work exposes the resulti
 gap. The default plan uses Foundation (Weeks 1-2), Loading (Weeks 3-4), Progression
 (Weeks 5-7), and Deload (Week 8) phases.
 
-The Ibex Hybrid block begins July 27, 2026. It uses two lower sessions, two upper
+The Ibex Hybrid block begins July 21, 2026. It uses two lower sessions, two upper
 sessions, one full-body conditioning session, one full-body strength/bodybuilding
 session, and one recovery day. The mobile interface is organized into Today, Week,
 Progress, Library, and Settings screens. Existing athletic-block logs remain in
