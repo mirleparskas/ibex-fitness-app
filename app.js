@@ -402,7 +402,7 @@ function labelForSegmentKind(kind) {
   return "Notes";
 }
 
-function render() {
+function render(options = {}) {
   localStorage.setItem(`fit.week.${PLAN_KEY}`, String(state.week));
   renderTabs();
   renderBanner();
@@ -412,7 +412,7 @@ function render() {
   renderProgressScreen();
   renderLibrary();
   renderSettings();
-  showScreen(state.screen);
+  showScreen(state.screen, { preserveScroll: Boolean(options.preserveScroll) });
   applySearch();
 }
 
@@ -680,6 +680,17 @@ function renderDays() {
     });
   });
 
+  $$(".collapse-exercise").forEach((button) => {
+    button.addEventListener("click", () => {
+      const card = button.closest(".movement-card");
+      const collapsed = !card.classList.contains("collapsed");
+      card.classList.toggle("collapsed", collapsed);
+      button.textContent = collapsed ? "Expand" : "Minimize";
+      button.setAttribute("aria-expanded", String(!collapsed));
+      localStorage.setItem(`fit.collapsed.${button.dataset.track}`, collapsed ? "1" : "0");
+    });
+  });
+
   $$(".restore-exercise").forEach((button) => {
     button.addEventListener("click", () => {
       localStorage.removeItem(`fit.hidden.${button.dataset.track}`);
@@ -795,7 +806,7 @@ function bindPlanEditingControls() {
       if (to < 0 || to >= days.length) return;
       [days[from], days[to]] = [days[to], days[from]];
       saveEditableWeek(days);
-      render();
+      render({ preserveScroll: true });
     });
   });
 
@@ -833,7 +844,7 @@ function bindPlanEditingControls() {
       if (to < 0 || to >= day.segments.length) return;
       [day.segments[from], day.segments[to]] = [day.segments[to], day.segments[from]];
       saveEditableWeek(days);
-      render();
+      render({ preserveScroll: true });
     });
   });
 
@@ -1339,6 +1350,7 @@ function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, move
   const instanceSwap = localStorage.getItem(instanceKey);
   const activeMovement = blockSwap || instanceSwap || base;
   const trackKey = `${segmentKey}.m${movementIndex}`;
+  const collapsed = localStorage.getItem(`fit.collapsed.${trackKey}`) === "1";
   const saved = normalizeTrackEntry(readJson(`fit.track.${trackKey}`, {}));
   const options = optionsForCategory(category, base);
   const optionList = options.includes(activeMovement) ? options : [activeMovement, ...options];
@@ -1356,7 +1368,7 @@ function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, move
   }
 
   return `
-    <div class="movement-card" data-movement-id="${escapeAttr(movementId)}">
+    <div class="movement-card${collapsed ? " collapsed" : ""}" data-movement-id="${escapeAttr(movementId)}">
       <div class="movement-main">
         <div>
           <p class="plain movement-name">${escapeHtml(activeMovement)}</p>
@@ -1364,9 +1376,11 @@ function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, move
         </div>
         <div class="movement-actions">
           <span class="category-pill">${escapeHtml(labelForCategory(category))}</span>
+          <button class="collapse-exercise" type="button" data-track="${escapeAttr(trackKey)}" aria-expanded="${String(!collapsed)}" aria-label="${collapsed ? "Expand" : "Minimize"} ${escapeAttr(activeMovement)}">${collapsed ? "Expand" : "Minimize"}</button>
           <button class="hide-exercise" type="button" data-track="${escapeAttr(trackKey)}" aria-label="Delete ${escapeAttr(activeMovement)}">Delete</button>
         </div>
       </div>
+      <div class="movement-collapsible">
       <div class="movement-tools">
         <label>
           <span>Swap</span>
@@ -1389,6 +1403,7 @@ function renderTrackedMovement(rawMovement, segmentKey, dayIndex, segIndex, move
         <button class="add-set" type="button" data-track="${escapeAttr(trackKey)}" data-movement-id="${escapeAttr(movementId)}" data-movement="${escapeAttr(activeMovement)}">Add set</button>
       </div>
       <p class="last-time" data-last-time="${escapeAttr(trackKey)}" data-movement-id="${escapeAttr(movementId)}"></p>
+      </div>
     </div>
   `;
 }
@@ -1715,13 +1730,13 @@ function updateLastTimePanels() {
   });
 }
 
-function showScreen(screen) {
+function showScreen(screen, options = {}) {
   const valid = ["today", "week", "progress", "library", "settings"];
   state.screen = valid.includes(screen) ? screen : "today";
   localStorage.setItem("fit.ui.screen", state.screen);
   $$(".app-screen").forEach((element) => element.classList.toggle("active", element.dataset.screen === state.screen));
   $$(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.screenTarget === state.screen));
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (!options.preserveScroll) window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function todayAssignment(days) {

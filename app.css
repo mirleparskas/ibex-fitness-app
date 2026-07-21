@@ -636,6 +636,14 @@ button:hover {
   background: rgba(255, 255, 255, .025);
 }
 
+.movement-card.collapsed {
+  padding-bottom: 11px;
+}
+
+.movement-card.collapsed .movement-collapsible {
+  display: none;
+}
+
 .movement-main {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -684,12 +692,17 @@ button:hover {
 }
 
 .hide-exercise,
-.restore-exercise {
+.restore-exercise,
+.collapse-exercise {
   min-height: 28px;
   padding: 0 9px;
   border-radius: 8px;
   color: var(--accent);
   font-size: 11px;
+}
+
+.collapse-exercise {
+  color: var(--blue);
 }
 
 .deleted-exercise {
