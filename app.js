@@ -347,6 +347,11 @@ function migrateSavedWeek(saved, weekIndex) {
     if (!template) return day;
     const segments = Array.isArray(day.segments) ? [...day.segments] : [];
     const templateById = Object.fromEntries(template.segments.map((segment) => [segment.id, segment]));
+    if (PLAN_KEY === HYBRID_PLAN_KEY) {
+      const templateIds = new Set(template.segments.map((segment) => segment.id));
+      const customSegments = segments.filter((segment) => !templateIds.has(segment.id));
+      return { ...day, title: template.title, focus: template.focus, duration: template.duration, targets: template.targets, segments: [...template.segments, ...customSegments] };
+    }
     if (day.id === "lower-power") {
       if (!segments.some((segment) => segment.id === "power-emom")) segments.splice(1, 0, templateById["power-emom"]);
       ["power-clean", "box-jump"].forEach((id) => {
