@@ -1,10 +1,13 @@
-const PLAN_KEY = "ibex-athletic-v3";
-const PREVIOUS_PLAN_KEYS = ["cardio-first-glute-recomp-v2", "cardio-first-glute-recomp-v1"];
+const HYBRID_PLAN_KEY = "ibex-hybrid-v4";
+const LEGACY_PLAN_KEY = "ibex-athletic-v3";
+const PLAN_KEY = isHybridBlockActive() ? HYBRID_PLAN_KEY : LEGACY_PLAN_KEY;
+const PREVIOUS_PLAN_KEYS = [LEGACY_PLAN_KEY, "cardio-first-glute-recomp-v2", "cardio-first-glute-recomp-v1"];
 const state = {
   week: readInitialWeek(),
   expanded: false,
   search: "",
-  openDays: new Set()
+  openDays: new Set(),
+  screen: localStorage.getItem("fit.ui.screen") || "today"
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -23,10 +26,23 @@ const storageRemoveItem = Storage.prototype.removeItem;
 function readInitialWeek() {
   const current = localStorage.getItem(`fit.week.${PLAN_KEY}`);
   if (current !== null) return Number(current) || 0;
+  if (PLAN_KEY === HYBRID_PLAN_KEY) {
+    const elapsed = Math.floor((startOfLocalDay(new Date()) - startOfLocalDay(new Date(`${HYBRID_START_DATE}T00:00:00`))) / 604800000);
+    if (elapsed >= 0) return Math.min(7, elapsed);
+  }
   const previous = PREVIOUS_PLAN_KEYS
     .map((key) => localStorage.getItem(`fit.week.${key}`))
     .find((value) => value !== null);
   return Number(previous) || 0;
+}
+
+function startOfLocalDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function isHybridBlockActive() {
+  if (localStorage.getItem("fit.hybrid.start-now") === "1") return true;
+  return startOfLocalDay(new Date()) >= startOfLocalDay(new Date(`${typeof HYBRID_START_DATE === "string" ? HYBRID_START_DATE : "2026-07-27"}T00:00:00`));
 }
 
 Storage.prototype.setItem = function patchedSetItem(key, value) {
@@ -109,6 +125,7 @@ function buildWeek(weekIndex) {
 }
 
 function buildDefaultWeek(weekIndex) {
+  if (PLAN_KEY === HYBRID_PLAN_KEY && typeof buildHybridWeek === "function") return buildHybridWeek(weekIndex);
   if (typeof buildAthleticWeek === "function") return buildAthleticWeek(weekIndex);
   const p = PROGRAM.progressions;
   const c = PROGRAM.cardio;
@@ -280,6 +297,8 @@ function normalizeSegment(segment, index = 0) {
     return {
       ...base,
       intensityAware: Boolean(segment.intensityAware),
+      defaultMode: segment.defaultMode || "controlled",
+      optional: Boolean(segment.optional),
       metcon: {
         format: segment.metcon?.format || "12 min AMRAP",
         moves: Array.isArray(segment.metcon?.moves) ? segment.metcon.moves : ["Add workout movements"],
@@ -290,6 +309,7 @@ function normalizeSegment(segment, index = 0) {
     };
   }
   if (kind === "class") return { ...base, text: segment.text || "Log the class demands after attending." };
+  if (kind === "choice") return base;
   if (kind === "lift") {
     return {
       ...base,
@@ -319,7 +339,8 @@ function getEditableWeek(weekIndex) {
 
 function migrateSavedWeek(saved, weekIndex) {
   const versionKey = `fit.template.version.${PLAN_KEY}.w${weekIndex}`;
-  if (Number(localStorage.getItem(versionKey) || 0) >= (typeof ATHLETIC_TEMPLATE_VERSION === "number" ? ATHLETIC_TEMPLATE_VERSION : 1)) return saved;
+  const activeVersion = PLAN_KEY === HYBRID_PLAN_KEY ? HYBRID_TEMPLATE_VERSION : (typeof ATHLETIC_TEMPLATE_VERSION === "number" ? ATHLETIC_TEMPLATE_VERSION : 1);
+  if (Number(localStorage.getItem(versionKey) || 0) >= activeVersion) return saved;
   const defaults = buildDefaultWeek(weekIndex);
   const migrated = saved.map((day) => {
     const template = defaults.find((candidate) => candidate.id === day.id);
@@ -345,7 +366,7 @@ function migrateSavedWeek(saved, weekIndex) {
     }
     return { ...day, segments };
   });
-  storageSetItem.call(localStorage, versionKey, String(typeof ATHLETIC_TEMPLATE_VERSION === "number" ? ATHLETIC_TEMPLATE_VERSION : 1));
+  storageSetItem.call(localStorage, versionKey, String(activeVersion));
   storageSetItem.call(localStorage, customPlanKey(weekIndex), JSON.stringify(migrated));
   scheduleProgressSync();
   return migrated;
@@ -382,6 +403,11 @@ function render() {
   renderBanner();
   renderTargetDashboard();
   renderDays();
+  renderToday();
+  renderProgressScreen();
+  renderLibrary();
+  renderSettings();
+  showScreen(state.screen);
   applySearch();
 }
 
@@ -535,6 +561,10 @@ function renderDays() {
       writeJson(`fit.class.${input.dataset.key}`, current);
     });
     input.addEventListener("change", () => {
+      const current = readClassEntry(input.dataset.key);
+      current[input.dataset.field] = input.type === "checkbox" ? input.checked : input.value;
+      current.updatedAt = new Date().toISOString();
+      writeJson(`fit.class.${input.dataset.key}`, current);
       renderTargetDashboard();
       updateWodRecommendationPanels();
     });
@@ -547,6 +577,16 @@ function renderDays() {
       updateWodRecommendationPanels();
     });
   });
+
+  $$(".condition-choice").forEach((select) => {
+    select.addEventListener("change", () => {
+      localStorage.setItem(`fit.conditionchoice.${select.dataset.dayKey}`, select.value);
+      renderTargetDashboard();
+      applyConditionChoices();
+    });
+  });
+
+  applyConditionChoices();
 
   $$(".extra-name").forEach((input) => {
     input.addEventListener("input", () => {
@@ -810,7 +850,7 @@ function targetsForDay(day) {
   if (Array.isArray(day.targetsOverride)) return day.targetsOverride;
   const segmentTargets = (day.segments || []).flatMap((segment) => segment.targets || []);
   const structural = day.type === "r" ? ["rest"] : [];
-  return Array.from(new Set([...segmentTargets, ...structural]));
+  return Array.from(new Set([...(day.targets || []), ...segmentTargets, ...structural]));
 }
 
 function targetCounts(days) {
@@ -818,8 +858,14 @@ function targetCounts(days) {
   const completed = {};
   Object.keys(WEEKLY_TARGETS).forEach((key) => { planned[key] = 0; completed[key] = 0; });
   days.forEach((day, dayIndex) => {
-    const targets = targetsForDay(day);
     const dayKey = `w${state.week}.${PLAN_KEY}.${day.id || `d${dayIndex}`}`;
+    let targets = targetsForDay(day);
+    if (day.id === "hybrid-conditioning") {
+      const choice = localStorage.getItem(`fit.conditionchoice.${dayKey}`) || "zone2";
+      const longKey = `${dayKey}.long-conditioning`;
+      const longMode = localStorage.getItem(`fit.wodmode.${longKey}`) || "aerobic";
+      if (choice === "long" && longMode !== "aerobic") targets = targets.filter((target) => target !== "zone2");
+    }
     const isDone = localStorage.getItem(`fit.done.${dayKey}`) === "1";
     targets.forEach((target) => {
       planned[target] = (planned[target] || 0) + 1;
@@ -844,7 +890,9 @@ function renderTargetDashboard() {
   if (!grid || typeof WEEKLY_TARGETS === "undefined") return;
   const days = buildWeek(state.week);
   const counts = targetCounts(days);
-  const priority = ["glute","upper","olympic","jump","sprint","core","intentionalCore","physio","anaerobic","zone2","carry","rest"];
+  const priority = PLAN_KEY === HYBRID_PLAN_KEY
+    ? ["lower","upperSplit","fullBody","metcon","glute","olympic","jump","sprint","gymnastics","physio","anaerobic","zone2","rest"]
+    : ["glute","upper","olympic","jump","sprint","core","intentionalCore","physio","anaerobic","zone2","carry","rest"];
   grid.innerHTML = priority.map((key) => {
     const target = WEEKLY_TARGETS[key];
     const status = targetStatus(counts.completed[key], counts.planned[key], target);
@@ -997,11 +1045,16 @@ function renderSegment(segment, key, dayIndex, segIndex, segmentCount) {
   }
 
   if (segment.kind === "class") body = renderClassLog(key, segment.text);
+  if (segment.kind === "choice") {
+    const dayKey = key.replace(/\.conditioning-choice$/, "");
+    const selected = localStorage.getItem(`fit.conditionchoice.${dayKey}`) || "zone2";
+    body = `<div class="conditioning-choice"><label><span>Today’s format</span><select class="condition-choice" data-day-key="${escapeAttr(dayKey)}"><option value="zone2" ${selected === "zone2" ? "selected" : ""}>Choice A · True Zone 2</option><option value="long" ${selected === "long" ? "selected" : ""}>Choice B · Long EMOM / AMRAP</option></select></label><p>Only the selected option is required today.</p></div>`;
+  }
 
   if (segment.kind === "metcon") {
     const selected = localStorage.getItem(`fit.tier.${key}`) || "L2";
     const mc = segment.metcon;
-    const intensityPanel = segment.intensityAware ? renderWodIntensityPanel(key) : "";
+    const intensityPanel = segment.intensityAware ? renderWodIntensityPanel(key, segment.defaultMode, segment.optional) : "";
     body = `
       <div class="metcon">
         ${intensityPanel}
@@ -1035,7 +1088,7 @@ function renderSegment(segment, key, dayIndex, segIndex, segmentCount) {
   }
 
   return `
-    <section class="seg">
+    <section class="seg segment-${escapeAttr(segment.id)}">
       <div class="seg-h">
         <span class="seg-num">${escapeHtml(segment.num)}</span>
         <span class="seg-name">${escapeHtml(segment.name)}</span>
@@ -1050,6 +1103,7 @@ function readClassEntry(key) {
   const saved = readJson(`fit.class.${key}`, {});
   return {
     completed: Boolean(saved.completed),
+    relationship: saved.relationship || "none",
     name: saved.name || "",
     duration: saved.duration || "",
     intensity: saved.intensity || "",
@@ -1070,6 +1124,7 @@ function renderClassLog(key, description) {
     <p class="plain">${escapeHtml(description)}</p>
     <label class="class-attended"><input class="class-input" type="checkbox" data-key="${escapeAttr(key)}" data-field="completed" ${saved.completed ? "checked" : ""}> Class attended</label>
     <div class="class-grid">
+      <label><span>Use class as</span><select class="class-input" data-key="${escapeAttr(key)}" data-field="relationship"><option value="none" ${saved.relationship === "none" ? "selected" : ""}>Log only</option><option value="replaces_metcon" ${saved.relationship === "replaces_metcon" ? "selected" : ""}>Replace planned finisher</option><option value="additional" ${saved.relationship === "additional" ? "selected" : ""}>Additional work</option></select></label>
       <label><span>Class name</span><input class="class-input" data-key="${escapeAttr(key)}" data-field="name" value="${escapeAttr(saved.name)}" placeholder="CrossFit, conditioning…"></label>
       <label><span>Duration (min)</span><input class="class-input" type="number" min="0" max="180" data-key="${escapeAttr(key)}" data-field="duration" value="${escapeAttr(saved.duration)}"></label>
       <label><span>Overall intensity 1–10</span><input class="class-input" type="number" min="1" max="10" data-key="${escapeAttr(key)}" data-field="intensity" value="${escapeAttr(saved.intensity)}"></label>
@@ -1085,48 +1140,59 @@ function currentHardExposureCount(days = buildWeek(state.week), excludeWod = fal
   let count = 0;
   days.forEach((day, dayIndex) => {
     const dayKey = `w${state.week}.${PLAN_KEY}.${day.id || `d${dayIndex}`}`;
-    if (day.id === "sprint-glute" && localStorage.getItem(`fit.done.${dayKey}`) === "1") count += 1;
+    if ((day.id === "sprint-glute" || day.id === "hybrid-lower-b") && localStorage.getItem(`fit.done.${dayKey}`) === "1") count += 1;
     (day.segments || []).filter((segment) => segment.kind === "class").forEach((segment) => {
       if (isHardClass(readClassEntry(`${dayKey}.${segment.id}`))) count += 1;
     });
-    if (!excludeWod && day.id === "full-athletic" && localStorage.getItem(`fit.done.${dayKey}`) === "1") {
-      const wodKey = `${dayKey}.crossfit-wod`;
-      if ((localStorage.getItem(`fit.wodmode.${wodKey}`) || recommendedWodMode(days)) === "hard") count += 1;
+    if (!excludeWod && localStorage.getItem(`fit.done.${dayKey}`) === "1" && !dayHasReplacementClass(day, dayKey)) {
+      (day.segments || []).filter((segment) => segment.kind === "metcon" && !segment.optional).forEach((segment) => {
+        const wodKey = `${dayKey}.${segment.id}`;
+        if ((localStorage.getItem(`fit.wodmode.${wodKey}`) || segment.defaultMode || "controlled") === "hard") count += 1;
+      });
     }
   });
   return count;
 }
 
+function dayHasReplacementClass(day, dayKey) {
+  return (day.segments || []).filter((segment) => segment.kind === "class").some((segment) => {
+    const entry = readClassEntry(`${dayKey}.${segment.id}`);
+    return entry.completed && entry.relationship === "replaces_metcon";
+  });
+}
+
 function recommendedWodMode(days = buildWeek(state.week)) {
-  const hard = currentHardExposureCount(days, true);
+  const hard = currentHardExposureCount(days, false);
   if (hard <= 1) return "hard";
   if (hard === 2) return "controlled";
   return "aerobic";
 }
 
-function renderWodIntensityPanel(key) {
-  const recommended = recommendedWodMode();
+function renderWodIntensityPanel(key, defaultMode = "controlled", optional = false) {
+  const budgetMode = recommendedWodMode();
+  const recommended = budgetMode === "aerobic" ? "aerobic" : budgetMode === "controlled" && defaultMode === "hard" ? "controlled" : defaultMode;
   const selected = localStorage.getItem(`fit.wodmode.${key}`) || recommended;
   const copy = {
     hard: "Full WOD as written. This counts as a hard anaerobic exposure.",
     controlled: "Reduce time, rounds, or repetitions by about 20%; cap effort at RPE 7.",
     aerobic: "Use L1 movements, remove repetitive jumping, and cap effort at RPE 6. This does not count as hard."
   };
-  return `<div class="wod-intensity" data-wod-panel="${escapeAttr(key)}">
+  return `<div class="wod-intensity" data-wod-panel="${escapeAttr(key)}" data-default-mode="${escapeAttr(defaultMode)}" data-optional="${optional ? "1" : "0"}">
     <div><b>Intensity budget</b><span>${currentHardExposureCount(buildWeek(state.week), true)} hard exposures completed before this WOD</span></div>
     <label><span>Workout version</span><select class="wod-mode" data-key="${escapeAttr(key)}">
       <option value="hard" ${selected === "hard" ? "selected" : ""}>Full / hard</option>
       <option value="controlled" ${selected === "controlled" ? "selected" : ""}>Controlled</option>
       <option value="aerobic" ${selected === "aerobic" ? "selected" : ""}>Technique / aerobic</option>
+      ${optional ? `<option value="skipped" ${selected === "skipped" ? "selected" : ""}>Skip optional finisher</option>` : ""}
     </select></label>
-    <p><strong>Recommended: ${recommended}.</strong> ${copy[selected]}</p>
+    <p><strong>Recommended: ${recommended}.</strong> ${selected === "skipped" ? "Optional finisher skipped; required weekly targets are unaffected." : copy[selected]}</p>
   </div>`;
 }
 
 function updateWodRecommendationPanels() {
   $$('[data-wod-panel]').forEach((panel) => {
     const replacement = document.createElement("div");
-    replacement.innerHTML = renderWodIntensityPanel(panel.dataset.wodPanel);
+    replacement.innerHTML = renderWodIntensityPanel(panel.dataset.wodPanel, panel.dataset.defaultMode || "controlled", panel.dataset.optional === "1");
     panel.replaceWith(replacement.firstElementChild);
   });
   $$(".wod-mode").forEach((select) => select.addEventListener("change", () => {
@@ -1134,6 +1200,15 @@ function updateWodRecommendationPanels() {
     renderTargetDashboard();
     updateWodRecommendationPanels();
   }));
+}
+
+function applyConditionChoices() {
+  $$(".day").forEach((card) => {
+    if (!card.dataset.dayKey?.endsWith(".hybrid-conditioning")) return;
+    const choice = localStorage.getItem(`fit.conditionchoice.${card.dataset.dayKey}`) || "zone2";
+    $(".segment-zone2-choice", card)?.classList.toggle("choice-hidden", choice !== "zone2");
+    $(".segment-long-conditioning", card)?.classList.toggle("choice-hidden", choice !== "long");
+  });
 }
 
 function renderCardioOptions(cardio) {
@@ -1607,7 +1682,7 @@ function findLastEntry(movementId, trackKey) {
       ...entry,
       week: Number(entry.key.match(/fit\.track\.w(\d+)/)?.[1] || -1)
     }))
-    .filter((entry) => entry.week < currentWeek)
+    .filter((entry) => !entry.key.includes(`.${PLAN_KEY}.`) || entry.week < currentWeek)
     .sort((a, b) => b.week - a.week || String(b.value.updatedAt || "").localeCompare(String(a.value.updatedAt || "")))[0];
 }
 
@@ -1633,6 +1708,77 @@ function updateLastTimePanels() {
       .join("; ");
     panel.textContent = `Last time, week ${last.week + 1}: ${summary}`;
   });
+}
+
+function showScreen(screen) {
+  const valid = ["today", "week", "progress", "library", "settings"];
+  state.screen = valid.includes(screen) ? screen : "today";
+  localStorage.setItem("fit.ui.screen", state.screen);
+  $$(".app-screen").forEach((element) => element.classList.toggle("active", element.dataset.screen === state.screen));
+  $$(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.screenTarget === state.screen));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function todayAssignment(days) {
+  if (PLAN_KEY === HYBRID_PLAN_KEY) {
+    const start = startOfLocalDay(new Date(`${HYBRID_START_DATE}T00:00:00`));
+    const elapsedDays = Math.max(0, Math.floor((startOfLocalDay(new Date()) - start) / 86400000));
+    return { index: elapsedDays % 7, day: days[elapsedDays % 7] || days[0] };
+  }
+  const index = days.findIndex((day, dayIndex) => localStorage.getItem(`fit.done.w${state.week}.${PLAN_KEY}.${day.id || `d${dayIndex}`}`) !== "1");
+  return { index: index < 0 ? 0 : index, day: days[index < 0 ? 0 : index] };
+}
+
+function renderToday() {
+  const root = $("#todayCard");
+  if (!root) return;
+  const days = buildWeek(state.week);
+  const assignment = todayAssignment(days);
+  const day = assignment.day;
+  if (!day) return;
+  const targets = targetsForDay(day);
+  const dayKey = `w${state.week}.${PLAN_KEY}.${day.id}`;
+  const done = localStorage.getItem(`fit.done.${dayKey}`) === "1";
+  root.innerHTML = `<div class="today-date"><p class="kicker">${new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}</p><span>Week ${state.week + 1}</span></div>
+    <div class="today-main"><span class="today-tag">${escapeHtml(day.tag)}</span><div><h2>${escapeHtml(day.title)}</h2><p>${escapeHtml(day.focus)}</p></div></div>
+    <div class="today-meta"><span>${day.duration || 0} min</span><span>${day.segments.length} sections</span><span>${done ? "Completed" : "Ready"}</span></div>
+    <div class="day-targets">${targets.slice(0,8).map((target)=>`<span>${escapeHtml(WEEKLY_TARGETS[target]?.label || target)}</span>`).join("")}</div>
+    <button class="today-start" type="button" data-today-day="${assignment.index}">${done ? "Review workout" : "Open workout"}</button>`;
+  $("[data-today-day]", root)?.addEventListener("click", () => {
+    state.openDays.add(dayKey);
+    showScreen("week");
+    const card = $(`[data-day-key="${dayKey}"]`);
+    card?.classList.add("open");
+    card?.scrollIntoView({ behavior:"smooth", block:"start" });
+  });
+}
+
+function renderProgressScreen() {
+  const root = $("#progressSummary");
+  if (!root) return;
+  const counts = targetCounts(buildWeek(state.week));
+  const tracked = Object.keys(localStorage).filter((key)=>key.startsWith("fit.track.")).length;
+  const completed = Object.keys(localStorage).filter((key)=>key.startsWith("fit.done.") && localStorage.getItem(key)==="1").length;
+  root.innerHTML = `<div class="progress-hero"><div><b>${completed}</b><span>workouts completed</span></div><div><b>${tracked}</b><span>exercise logs</span></div><div><b>${counts.completed.metcon || 0}</b><span>finishers this week</span></div></div>
+    <div class="progress-categories">${["Strength & load","Bodybuilding volume","Olympic technique","Strict gymnastics","Jumps & sprint","Conditioning","Physio"].map((label)=>`<article><h3>${label}</h3><p>Your saved sets, repetitions, loads and notes remain connected across blocks.</p></article>`).join("")}</div>`;
+}
+
+function renderLibrary(query = "") {
+  const root = $("#libraryList");
+  if (!root) return;
+  const database = typeof EXERCISE_OPTIONS === "undefined" ? {} : EXERCISE_OPTIONS;
+  const rows = Object.entries(database).flatMap(([category, exercises]) => exercises.map((name)=>({name,category})))
+    .filter((row,index,list)=>list.findIndex((item)=>item.name===row.name)===index)
+    .filter((row)=>!isProhibitedMovement(row.name))
+    .filter((row)=>`${row.name} ${row.category}`.toLowerCase().includes(String(query).toLowerCase()));
+  root.innerHTML = rows.slice(0,100).map((row)=>`<article><div><h3>${escapeHtml(row.name)}</h3><span>${escapeHtml(labelForCategory(row.category))}</span></div><button type="button" title="Use Replace inside a workout to select this movement">Available</button></article>`).join("");
+}
+
+function renderSettings() {
+  const root = $("#blockStatus");
+  if (!root) return;
+  const active = PLAN_KEY === HYBRID_PLAN_KEY;
+  root.innerHTML = `<h3>${active ? "Hybrid block active" : "Hybrid block scheduled"}</h3><p>${active ? `Week ${state.week + 1} of 8` : `Starts Monday, ${new Date(`${HYBRID_START_DATE}T00:00:00`).toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"})}. Your current week remains unchanged.`}</p><p class="fineprint">All data stays in this browser and remains included in JSON backups.</p>`;
 }
 
 function labelForType(type) {
@@ -1698,6 +1844,13 @@ $("#searchInput").addEventListener("input", (event) => {
   state.search = event.target.value;
   applySearch();
 });
+
+$$(".nav-item").forEach((button) => button.addEventListener("click", () => showScreen(button.dataset.screenTarget)));
+
+$("#librarySearch")?.addEventListener("input", (event) => renderLibrary(event.target.value));
+$("#settingsExportBtn")?.addEventListener("click", exportProgressBackup);
+$("#settingsImportBtn")?.addEventListener("click", () => $("#importFile").click());
+$("#settingsResetBtn")?.addEventListener("click", () => $("#resetBtn").click());
 
 async function initApp() {
   await loadServerProgress();

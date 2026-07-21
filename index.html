@@ -3,27 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ibex Athletic Training</title>
+  <title>Ibex Hybrid Training</title>
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
   <main class="wrap">
     <header class="hero">
       <div>
-        <p class="kicker">8 Weeks / Flexible Calendar / Strength / Speed / Glutes</p>
-        <h1>Ibex Athletic Training</h1>
+        <p class="kicker">8 Weeks / Hybrid / Bodybuilding / CrossFit</p>
+        <h1>Ibex Hybrid</h1>
         <p class="sub">
-          Build glutes, strength, speed, jumping ability, and conditioning without
-          being trapped by fixed weekdays. Move or edit sessions while weekly targets
-          keep the purpose of the program visible.
+          Six flexible training sessions combining progressive strength, bodybuilding,
+          Olympic lifting, strict gymnastics, athletic work, and purposeful conditioning.
         </p>
       </div>
       <div class="stats" aria-label="Program summary">
-        <span><b>3</b> glute exposures</span>
-        <span><b>2</b> power exposures</span>
+        <span><b>6</b> training sessions</span>
+        <span><b>2</b> Olympic exposures</span>
         <span><b>2-3</b> physio sessions</span>
       </div>
     </header>
+
+    <section id="todayScreen" class="app-screen active" data-screen="today">
+      <div id="todayCard" class="today-card"></div>
+    </section>
+
+    <section id="weekScreen" class="app-screen" data-screen="week">
 
     <section class="controls" aria-label="Workout controls">
       <label class="search">
@@ -77,6 +82,29 @@
 
     <section id="dayList" class="day-list"></section>
 
+    </section>
+
+    <section id="progressScreen" class="app-screen" data-screen="progress">
+      <div class="screen-heading"><p class="kicker">Training trends</p><h2>Progress</h2></div>
+      <div id="progressSummary" class="progress-summary"></div>
+    </section>
+
+    <section id="libraryScreen" class="app-screen" data-screen="library">
+      <div class="screen-heading"><p class="kicker">Purpose-matched swaps</p><h2>Exercise Library</h2></div>
+      <input id="librarySearch" type="search" placeholder="Search exercises, muscles, patterns…">
+      <div id="libraryList" class="library-list"></div>
+    </section>
+
+    <section id="settingsScreen" class="app-screen" data-screen="settings">
+      <div class="screen-heading"><p class="kicker">Local-first controls</p><h2>Settings</h2></div>
+      <div id="blockStatus" class="settings-card"></div>
+      <div class="settings-card settings-actions">
+        <button id="settingsExportBtn" type="button">Export JSON backup</button>
+        <button id="settingsImportBtn" type="button">Import backup</button>
+        <button id="settingsResetBtn" type="button">Reset progress</button>
+      </div>
+    </section>
+
     <footer>
       <p>
         On EMOM, AMRAP, and chipper days, lift moderate with good form only. On
@@ -90,8 +118,17 @@
     </footer>
   </main>
 
+  <nav class="bottom-nav" aria-label="App navigation">
+    <button class="nav-item active" type="button" data-screen-target="today"><span>Today</span></button>
+    <button class="nav-item" type="button" data-screen-target="week"><span>Week</span></button>
+    <button class="nav-item" type="button" data-screen-target="progress"><span>Progress</span></button>
+    <button class="nav-item" type="button" data-screen-target="library"><span>Library</span></button>
+    <button class="nav-item" type="button" data-screen-target="settings"><span>Settings</span></button>
+  </nav>
+
   <script src="workouts.js"></script>
   <script src="athletic-data.js"></script>
+  <script src="hybrid-data.js"></script>
   <script src="exercise-options.js"></script>
   <script src="app.js"></script>
 </body>
